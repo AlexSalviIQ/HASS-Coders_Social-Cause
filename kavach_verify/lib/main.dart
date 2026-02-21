@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 import 'router.dart';
 
 void main() {
@@ -11,16 +13,38 @@ void main() {
   runApp(
     DevicePreview(
       enabled: true,
-      builder: (context) => ChangeNotifierProvider(
-        create: (_) => ThemeProvider(),
+      builder: (context) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
         child: const KavachVerifyApp(),
       ),
     ),
   );
 }
 
-class KavachVerifyApp extends StatelessWidget {
+class KavachVerifyApp extends StatefulWidget {
   const KavachVerifyApp({super.key});
+
+  @override
+  State<KavachVerifyApp> createState() => _KavachVerifyAppState();
+}
+
+class _KavachVerifyAppState extends State<KavachVerifyApp> {
+  late GoRouter _router;
+  AuthProvider? _lastAuth;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authProvider = Provider.of<AuthProvider>(context);
+    // Only recreate router when auth instance changes
+    if (_lastAuth != authProvider) {
+      _lastAuth = authProvider;
+      _router = createRouter(authProvider);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +55,7 @@ class KavachVerifyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      routerConfig: appRouter,
+      routerConfig: _router,
       locale: DevicePreview.locale(context),
       builder: (context, child) {
         final deviceChild = DevicePreview.appBuilder(context, child);
@@ -83,7 +107,6 @@ class _KavachSplash extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Shield icon
             Container(
                   width: 80,
                   height: 80,
@@ -115,7 +138,6 @@ class _KavachSplash extends StatelessWidget {
                   curve: Curves.easeOutBack,
                 ),
             const SizedBox(height: 24),
-            // App Name
             const Text(
                   'KavachVerify',
                   style: TextStyle(
@@ -142,7 +164,6 @@ class _KavachSplash extends StatelessWidget {
               ),
             ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
             const SizedBox(height: 40),
-            // Loading dots
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

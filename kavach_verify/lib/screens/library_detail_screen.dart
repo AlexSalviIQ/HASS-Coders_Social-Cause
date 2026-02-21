@@ -215,67 +215,58 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
           ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
           // Analysis
           Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.offWhite,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.danger.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : AppColors.offWhite,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.danger.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppColors.danger.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.analytics_rounded,
-                              size: 16,
-                              color: AppColors.danger,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            'Why It\'s Fake — AI Analysis',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.analytics_rounded,
+                          size: 16,
+                          color: AppColors.danger,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        item.analysisDetails,
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Why It\'s Fake — AI Analysis',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? AppColors.mediumGrey
-                              : AppColors.darkGrey,
-                          height: 1.6,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
-                ),
-              )
-              .animate()
-              .fadeIn(delay: 300.ms, duration: 400.ms)
-              .slideY(
-                begin: 0.05,
-                duration: 400.ms,
-                curve: Curves.easeOutCubic,
+                  const SizedBox(height: 12),
+                  Text(
+                    item.analysisDetails,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
               ),
+            ),
+          ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
           // Comments Section
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),

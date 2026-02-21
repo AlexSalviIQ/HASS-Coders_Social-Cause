@@ -22,23 +22,16 @@ class HomeScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
-                child: Text(
-                  'Quick Verify',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.white : AppColors.charcoal,
-                  ),
-                ),
-              )
-              .animate()
-              .fadeIn(duration: 350.ms)
-              .slideY(
-                begin: -0.08,
-                duration: 350.ms,
-                curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+            child: Text(
+              'Quick Verify',
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.white : AppColors.charcoal,
               ),
+            ),
+          ).animate().fadeIn(duration: 350.ms),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
@@ -58,7 +51,7 @@ class HomeScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: isLandscape ? 1.8 : 1.55,
+              childAspectRatio: isLandscape ? 2.3 : 1.55,
               children: [
                 _QuickAccessCard(
                   icon: Icons.photo_library_rounded,
@@ -85,12 +78,12 @@ class HomeScreen extends StatelessWidget {
                   onTap: () => _pickGovID(context),
                 ),
                 _QuickAccessCard(
-                  icon: Icons.map_rounded,
-                  label: 'Threat Heatmap',
-                  subtitle: 'View live threats',
+                  icon: Icons.flag_rounded,
+                  label: 'Report',
+                  subtitle: 'Report fake content',
                   gradient: const [Color(0xFFFF1744), Color(0xFFFF5252)],
                   delay: 240,
-                  onTap: () => context.go('/heatmap'),
+                  onTap: () => context.go('/report'),
                 ),
               ],
             ),
@@ -140,7 +133,7 @@ class HomeScreen extends StatelessWidget {
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 3.2,
+                    childAspectRatio: 3.8,
                   ),
                   itemCount: mockDetections.length,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -166,111 +159,107 @@ class HomeScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) =>
-          Container(
-                margin: const EdgeInsets.all(14),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : AppColors.white,
-                  borderRadius: BorderRadius.circular(18),
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Image / Video',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _PickOption(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  color: const Color(0xFF2962FF),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final file = await ImagePicker().pickImage(
+                      source: ImageSource.camera,
+                      requestFullMetadata: false,
+                    );
+                    if (file != null && context.mounted) {
+                      context.go(
+                        '/chat',
+                        extra: {
+                          'attachmentPath': file.path,
+                          'attachmentType': 'image',
+                          'attachmentName': file.name,
+                        },
+                      );
+                    }
+                  },
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.mediumGrey.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Image / Video',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.white : AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _PickOption(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Camera',
-                          color: const Color(0xFF2962FF),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            final file = await ImagePicker().pickImage(
-                              source: ImageSource.camera,
-                              requestFullMetadata: false,
-                            );
-                            if (file != null && context.mounted) {
-                              context.go(
-                                '/chat',
-                                extra: {
-                                  'attachmentPath': file.path,
-                                  'attachmentType': 'image',
-                                  'attachmentName': file.name,
-                                },
-                              );
-                            }
-                          },
-                        ),
-                        _PickOption(
-                          icon: Icons.photo_library_rounded,
-                          label: 'Gallery',
-                          color: const Color(0xFF00C853),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            final file = await ImagePicker().pickImage(
-                              source: ImageSource.gallery,
-                              requestFullMetadata: false,
-                            );
-                            if (file != null && context.mounted) {
-                              context.go(
-                                '/chat',
-                                extra: {
-                                  'attachmentPath': file.path,
-                                  'attachmentType': 'image',
-                                  'attachmentName': file.name,
-                                },
-                              );
-                            }
-                          },
-                        ),
-                        _PickOption(
-                          icon: Icons.videocam_rounded,
-                          label: 'Video',
-                          color: const Color(0xFFFF1744),
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            final file = await ImagePicker().pickVideo(
-                              source: ImageSource.gallery,
-                            );
-                            if (file != null && context.mounted) {
-                              context.go(
-                                '/chat',
-                                extra: {
-                                  'attachmentPath': file.path,
-                                  'attachmentType': 'video',
-                                  'attachmentName': file.name,
-                                },
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                _PickOption(
+                  icon: Icons.photo_library_rounded,
+                  label: 'Gallery',
+                  color: const Color(0xFF00C853),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final file = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      requestFullMetadata: false,
+                    );
+                    if (file != null && context.mounted) {
+                      context.go(
+                        '/chat',
+                        extra: {
+                          'attachmentPath': file.path,
+                          'attachmentType': 'image',
+                          'attachmentName': file.name,
+                        },
+                      );
+                    }
+                  },
                 ),
-              )
-              .animate()
-              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
-              .fadeIn(duration: 180.ms),
+                _PickOption(
+                  icon: Icons.videocam_rounded,
+                  label: 'Video',
+                  color: const Color(0xFFFF1744),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final file = await ImagePicker().pickVideo(
+                      source: ImageSource.gallery,
+                    );
+                    if (file != null && context.mounted) {
+                      context.go(
+                        '/chat',
+                        extra: {
+                          'attachmentPath': file.path,
+                          'attachmentType': 'video',
+                          'attachmentName': file.name,
+                        },
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 180.ms),
     );
   }
 
@@ -510,12 +499,6 @@ class _QuickAccessCard extends StatelessWidget {
           delay: Duration(milliseconds: 180 + delay),
           duration: 350.ms,
         )
-        .slideY(
-          begin: 0.1,
-          delay: Duration(milliseconds: 180 + delay),
-          duration: 350.ms,
-          curve: Curves.easeOutCubic,
-        )
         .scale(
           begin: const Offset(0.96, 0.96),
           delay: Duration(milliseconds: 180 + delay),
@@ -573,155 +556,146 @@ class _DetectionFeedCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final timeAgo = _formatTimeAgo(item.detectedAt);
     return GestureDetector(
-          onTap: () => context.go('/library/detail/${item.id}'),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCard : AppColors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: (isDark ? Colors.black : AppColors.deepBlue)
-                      .withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+      onTap: () => context.go('/library/detail/${item.id}'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : AppColors.deepBlue).withValues(
+                alpha: 0.04,
+              ),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _categoryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(_categoryIcon, color: _categoryColor, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _categoryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(_categoryIcon, color: _categoryColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.danger.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: const Text(
-                                '⚠ FAKE',
-                                style: TextStyle(
-                                  color: AppColors.danger,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: const Text(
+                            '⚠ FAKE',
+                            style: TextStyle(
+                              color: AppColors.danger,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              timeAgo,
-                              style: const TextStyle(
-                                color: AppColors.mediumGrey,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: isDark
-                                ? AppColors.white
-                                : AppColors.charcoal,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(width: 6),
                         Text(
-                          item.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.mediumGrey
-                                : AppColors.darkGrey,
-                            fontSize: 11,
-                            height: 1.4,
+                          timeAgo,
+                          style: const TextStyle(
+                            color: AppColors.mediumGrey,
+                            fontSize: 10,
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color: AppColors.mediumGrey,
-                            ),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                item.location,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.mediumGrey,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _categoryColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Text(
-                                '${(item.confidenceScore * 100).toInt()}%',
-                                style: TextStyle(
-                                  color: _categoryColor,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.mediumGrey
+                            : AppColors.darkGrey,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: AppColors.mediumGrey,
+                        ),
+                        const SizedBox(width: 3),
+                        Flexible(
+                          child: Text(
+                            item.location,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.mediumGrey,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _categoryColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            '${(item.confidenceScore * 100).toInt()}%',
+                            style: TextStyle(
+                              color: _categoryColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        )
-        .animate()
-        .fadeIn(
-          delay: Duration(milliseconds: 400 + (index * 80)),
-          duration: 350.ms,
-        )
-        .slideY(
-          begin: 0.06,
-          delay: Duration(milliseconds: 400 + (index * 80)),
-          duration: 350.ms,
-          curve: Curves.easeOutCubic,
-        );
+        ),
+      ),
+    ).animate().fadeIn(
+      delay: Duration(milliseconds: 400 + (index * 80)),
+      duration: 350.ms,
+    );
   }
 
   String _formatTimeAgo(DateTime dt) {

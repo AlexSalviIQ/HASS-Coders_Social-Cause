@@ -31,8 +31,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
         return 'Profile';
       case '/community':
         return 'Community';
-      case '/heatmap':
-        return 'Threat Heatmap';
+      case '/report':
+        return 'Report';
       default:
         if (widget.currentPath.startsWith('/library/detail')) return 'Details';
         return 'Home';
@@ -68,6 +68,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
       },
       child: Scaffold(
         key: _scaffoldKey,
+        resizeToAvoidBottomInset: false,
         drawer: _buildDrawer(context, isDark),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
@@ -172,7 +173,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                         ],
                       ),
                     ),
-                    // WhatsApp icon RIGHT — official WhatsApp icon
+                    // WhatsApp / Chat icon
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -193,11 +194,10 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: CustomPaint(
-                              size: const Size(20, 20),
-                              painter: _WhatsAppLogoPainter(),
-                            ),
+                          child: const Icon(
+                            Icons.chat,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
                       ),
@@ -235,36 +235,29 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.emeraldGreen,
-                                AppColors.emeraldGreenLight,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.emeraldGreen.withValues(
-                                  alpha: 0.3,
-                                ),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text('🛡️', style: TextStyle(fontSize: 22)),
-                          ),
-                        )
-                        .animate()
-                        .fadeIn(duration: 300.ms)
-                        .slideX(
-                          begin: -0.15,
-                          duration: 350.ms,
-                          curve: Curves.easeOutCubic,
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.emeraldGreen,
+                            AppColors.emeraldGreenLight,
+                          ],
                         ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.emeraldGreen.withValues(
+                              alpha: 0.3,
+                            ),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text('🛡️', style: TextStyle(fontSize: 22)),
+                      ),
+                    ).animate().fadeIn(duration: 300.ms),
                     const SizedBox(height: 10),
                     const Text(
                       'KavachVerify',
@@ -316,9 +309,9 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                       ),
                       _navItem(
                         context,
-                        Icons.map_rounded,
-                        'Threat Heatmap',
-                        '/heatmap',
+                        Icons.flag_rounded,
+                        'Report',
+                        '/report',
                         160,
                       ),
                       _navItem(
@@ -358,117 +351,60 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     final isActive =
         isSelected; // Renamed for clarity in the new widget structure
     return GestureDetector(
-          onTap: () {
-            Navigator.pop(context);
-            context.go(path);
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      onTap: () {
+        Navigator.pop(context);
+        context.go(path);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: isActive
+              ? (isDark
+                    ? AppColors.deepBlue.withValues(alpha: 0.2)
+                    : AppColors.deepBlue.withValues(alpha: 0.1))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 0,
+          ),
+          leading: Container(
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: isActive
-                  ? (isDark
-                        ? AppColors.deepBlue.withValues(alpha: 0.2)
-                        : AppColors.deepBlue.withValues(alpha: 0.1))
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+                  ? AppColors.deepBlue.withValues(alpha: 0.15)
+                  : (isDark
+                        ? AppColors.darkBorder.withValues(alpha: 0.5)
+                        : AppColors.lightGrey),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 0,
-              ),
-              leading: Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.deepBlue.withValues(alpha: 0.15)
-                      : (isDark
-                            ? AppColors.darkBorder.withValues(alpha: 0.5)
-                            : AppColors.lightGrey),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: isActive
-                      ? AppColors.deepBlue
-                      : (isDark ? AppColors.mediumGrey : AppColors.darkGrey),
-                ),
-              ),
-              title: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive
-                      ? (isDark ? AppColors.deepBlueLight : AppColors.deepBlue)
-                      : (isDark ? AppColors.white : AppColors.charcoal),
-                ),
-              ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isActive
+                  ? AppColors.deepBlue
+                  : (isDark ? AppColors.mediumGrey : AppColors.darkGrey),
             ),
           ),
-        )
-        .animate()
-        .fadeIn(
-          delay: Duration(milliseconds: delay),
-          duration: 250.ms,
-        )
-        .slideX(
-          begin: -0.1,
-          delay: Duration(milliseconds: delay),
-          duration: 250.ms,
-          curve: Curves.easeOutCubic,
-        );
+          title: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: isActive
+                  ? (isDark ? AppColors.deepBlueLight : AppColors.deepBlue)
+                  : (isDark ? AppColors.white : AppColors.charcoal),
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(
+      delay: Duration(milliseconds: delay),
+      duration: 250.ms,
+    );
   }
-}
-
-/// Custom painter for the WhatsApp logo icon
-class _WhatsAppLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    // Outer circle (chat bubble shape)
-    final center = Offset(w * 0.48, h * 0.46);
-    final radius = w * 0.36;
-    canvas.drawCircle(center, radius, paint);
-
-    // Small tail at bottom-left of bubble
-    final tailPath = Path()
-      ..moveTo(w * 0.22, h * 0.68)
-      ..quadraticBezierTo(w * 0.14, h * 0.88, w * 0.12, h * 0.92)
-      ..quadraticBezierTo(w * 0.24, h * 0.80, w * 0.36, h * 0.74);
-    canvas.drawPath(tailPath, paint..style = PaintingStyle.stroke);
-
-    // Phone handset inside the bubble
-    final phonePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    // Curved phone receiver shape
-    final phonePath = Path();
-    // Left earpiece
-    phonePath.moveTo(w * 0.30, h * 0.34);
-    phonePath.quadraticBezierTo(w * 0.28, h * 0.40, w * 0.34, h * 0.44);
-    // Mouthpiece connection
-    phonePath.quadraticBezierTo(w * 0.42, h * 0.50, w * 0.52, h * 0.54);
-    // Right earpiece
-    phonePath.quadraticBezierTo(w * 0.58, h * 0.56, w * 0.62, h * 0.50);
-    phonePath.quadraticBezierTo(w * 0.66, h * 0.44, w * 0.64, h * 0.38);
-    canvas.drawPath(phonePath, phonePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

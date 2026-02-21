@@ -198,102 +198,98 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (ctx) =>
-          Container(
-                margin: const EdgeInsets.all(14),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkCard : AppColors.white,
-                  borderRadius: BorderRadius.circular(18),
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Image / Video',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _AttachOption(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  color: AppColors.deepBlue,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final f = await _imagePicker.pickImage(
+                        source: ImageSource.camera,
+                        requestFullMetadata: false,
+                      );
+                      if (f != null) {
+                        _addAttachment(f.path, 'image', f.name);
+                      }
+                    } catch (e) {
+                      _snack('Camera unavailable');
+                    }
+                  },
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.mediumGrey.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Image / Video',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.white : AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _AttachOption(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Camera',
-                          color: AppColors.deepBlue,
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            try {
-                              final f = await _imagePicker.pickImage(
-                                source: ImageSource.camera,
-                                requestFullMetadata: false,
-                              );
-                              if (f != null) {
-                                _addAttachment(f.path, 'image', f.name);
-                              }
-                            } catch (e) {
-                              _snack('Camera unavailable');
-                            }
-                          },
-                        ),
-                        _AttachOption(
-                          icon: Icons.photo_library_rounded,
-                          label: 'Gallery',
-                          color: AppColors.emeraldGreen,
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            try {
-                              final f = await _imagePicker.pickImage(
-                                source: ImageSource.gallery,
-                                requestFullMetadata: false,
-                              );
-                              if (f != null) {
-                                _addAttachment(f.path, 'image', f.name);
-                              }
-                            } catch (e) {
-                              _snack('Cannot access gallery');
-                            }
-                          },
-                        ),
-                        _AttachOption(
-                          icon: Icons.videocam_rounded,
-                          label: 'Video',
-                          color: AppColors.danger,
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            try {
-                              final f = await _imagePicker.pickVideo(
-                                source: ImageSource.gallery,
-                              );
-                              if (f != null) {
-                                _addAttachment(f.path, 'video', f.name);
-                              }
-                            } catch (e) {
-                              _snack('Cannot pick video');
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                _AttachOption(
+                  icon: Icons.photo_library_rounded,
+                  label: 'Gallery',
+                  color: AppColors.emeraldGreen,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final f = await _imagePicker.pickImage(
+                        source: ImageSource.gallery,
+                        requestFullMetadata: false,
+                      );
+                      if (f != null) {
+                        _addAttachment(f.path, 'image', f.name);
+                      }
+                    } catch (e) {
+                      _snack('Cannot access gallery');
+                    }
+                  },
                 ),
-              )
-              .animate()
-              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
-              .fadeIn(duration: 180.ms),
+                _AttachOption(
+                  icon: Icons.videocam_rounded,
+                  label: 'Video',
+                  color: AppColors.danger,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final f = await _imagePicker.pickVideo(
+                        source: ImageSource.gallery,
+                      );
+                      if (f != null) {
+                        _addAttachment(f.path, 'video', f.name);
+                      }
+                    } catch (e) {
+                      _snack('Cannot pick video');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 180.ms),
     );
   }
 
@@ -536,177 +532,172 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
         // Input bar
         Container(
-              padding: EdgeInsets.fromLTRB(
-                8,
-                6,
-                8,
-                MediaQuery.of(context).padding.bottom > 0
-                    ? MediaQuery.of(context).padding.bottom
-                    : 10,
+          padding: EdgeInsets.fromLTRB(
+            8,
+            6,
+            8,
+            MediaQuery.of(context).padding.bottom > 0
+                ? MediaQuery.of(context).padding.bottom
+                : 10,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
               ),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
+            ],
+          ),
+          child: Row(
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(22),
+                  onTap: _showAttachmentMenu,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.deepBlue.withValues(
+                        alpha: isDark ? 0.3 : 0.1,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: isDark
+                          ? AppColors.deepBlueLight
+                          : AppColors.deepBlue,
+                      size: 22,
+                    ),
                   ),
-                ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(22),
-                      onTap: _showAttachmentMenu,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.deepBlue.withValues(
-                            alpha: isDark ? 0.3 : 0.1,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add_rounded,
-                          color: isDark
-                              ? AppColors.deepBlueLight
-                              : AppColors.deepBlue,
-                          size: 22,
-                        ),
-                      ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkCard
+                        : AppColors.lightGrey.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder : Colors.transparent,
+                      width: 1,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkCard
-                            : AppColors.lightGrey.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: isDark
-                              ? AppColors.darkBorder
-                              : Colors.transparent,
-                          width: 1,
-                        ),
+                  child: TextField(
+                    controller: _textController,
+                    decoration: InputDecoration(
+                      hintText: 'Paste text, links, or message...',
+                      hintStyle: TextStyle(
+                        color: AppColors.mediumGrey,
+                        fontSize: 13,
                       ),
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: 'Paste text, links, or message...',
-                          hintStyle: TextStyle(
-                            color: AppColors.mediumGrey,
-                            fontSize: 13,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppColors.white : AppColors.charcoal,
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: _sendMessage,
-                        maxLines: 4,
-                        minLines: 1,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                     ),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.white : AppColors.charcoal,
+                    ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _sendMessage,
+                    maxLines: 4,
+                    minLines: 1,
                   ),
-                  const SizedBox(width: 6),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, anim) => ScaleTransition(
-                      scale: anim,
-                      child: FadeTransition(opacity: anim, child: child),
-                    ),
-                    child: _hasText
-                        ? Material(
-                            key: const ValueKey('send'),
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(22),
-                              onTap: () => _sendMessage(_textController.text),
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.emeraldGreen,
-                                      AppColors.emeraldGreenLight,
-                                    ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, anim) => ScaleTransition(
+                  scale: anim,
+                  child: FadeTransition(opacity: anim, child: child),
+                ),
+                child: _hasText
+                    ? Material(
+                        key: const ValueKey('send'),
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () => _sendMessage(_textController.text),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.emeraldGreen,
+                                  AppColors.emeraldGreenLight,
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.emeraldGreen.withValues(
+                                    alpha: 0.3,
                                   ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.emeraldGreen.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
+                                  blurRadius: 6,
                                 ),
-                                child: const Icon(
-                                  Icons.send_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
+                              ],
                             ),
-                          )
-                        : Material(
-                            key: const ValueKey('mic'),
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(22),
-                              onTap: _toggleVoiceRecording,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: _isRecording
-                                      ? AppColors.danger.withValues(alpha: 0.15)
-                                      : AppColors.deepBlue.withValues(
-                                          alpha: isDark ? 0.3 : 0.1,
-                                        ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _isRecording
-                                      ? Icons.stop_rounded
-                                      : Icons.mic_rounded,
-                                  color: _isRecording
-                                      ? AppColors.danger
-                                      : (isDark
-                                            ? AppColors.deepBlueLight
-                                            : AppColors.deepBlue),
-                                  size: 20,
-                                ),
-                              ),
+                            child: const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 18,
                             ),
                           ),
-                  ),
-                ],
+                        ),
+                      )
+                    : Material(
+                        key: const ValueKey('mic'),
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: _toggleVoiceRecording,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _isRecording
+                                  ? AppColors.danger.withValues(alpha: 0.15)
+                                  : AppColors.deepBlue.withValues(
+                                      alpha: isDark ? 0.3 : 0.1,
+                                    ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isRecording
+                                  ? Icons.stop_rounded
+                                  : Icons.mic_rounded,
+                              color: _isRecording
+                                  ? AppColors.danger
+                                  : (isDark
+                                        ? AppColors.deepBlueLight
+                                        : AppColors.deepBlue),
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
-            )
-            .animate()
-            .fadeIn(duration: 250.ms)
-            .slideY(begin: 0.08, duration: 250.ms, curve: Curves.easeOutCubic),
+            ],
+          ),
+        ).animate().fadeIn(duration: 250.ms),
       ],
     );
   }
 }
 
-class _ChatBubble extends StatelessWidget {
+class _ChatBubble extends StatefulWidget {
   final ChatMessage message;
   final int index;
   final AudioPlayer audioPlayer;
@@ -715,6 +706,25 @@ class _ChatBubble extends StatelessWidget {
     required this.index,
     required this.audioPlayer,
   });
+
+  @override
+  State<_ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<_ChatBubble> {
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _isPlaying = false);
+    });
+  }
+
+  ChatMessage get message => widget.message;
+  int get index => widget.index;
+  AudioPlayer get audioPlayer => widget.audioPlayer;
 
   @override
   Widget build(BuildContext context) {
@@ -1161,7 +1171,7 @@ class _ChatBubble extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => _playVoice(context, path),
+            onTap: () => _toggleVoice(context, path),
             child: Container(
               width: 36,
               height: 36,
@@ -1169,8 +1179,8 @@ class _ChatBubble extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
+              child: Icon(
+                _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                 color: Colors.white,
                 size: 20,
               ),
@@ -1184,13 +1194,20 @@ class _ChatBubble extends StatelessWidget {
                 // Waveform bars
                 Row(
                   children: List.generate(22, (i) {
-                    final h = 4.0 + (i % 7) * 3.5 + (i % 3) * 2.5;
+                    // Hash-based unique waveform per message
+                    final seed =
+                        message.text.hashCode ^
+                        (message.attachmentPath?.hashCode ?? 0);
+                    final rng = (seed + i * 7 + i * i * 3) & 0xFFFF;
+                    final h = 4.0 + (rng % 18) * 1.2;
                     return Container(
                       width: 2.5,
                       height: h,
                       margin: const EdgeInsets.only(right: 1.5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: Colors.white.withValues(
+                          alpha: _isPlaying ? 0.9 : 0.6,
+                        ),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     );
@@ -1214,7 +1231,7 @@ class _ChatBubble extends StatelessWidget {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      'Tap ▶ to play',
+                      _isPlaying ? 'Playing...' : 'Tap ▶ to play',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
                         fontSize: 9,
@@ -1230,9 +1247,9 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
-  void _playVoice(BuildContext context, String path) async {
+  void _toggleVoice(BuildContext context, String path) async {
     try {
-      if (path.isEmpty || path == 'voice_recording.aac') {
+      if (path.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('No recording to play'),
@@ -1244,12 +1261,20 @@ class _ChatBubble extends StatelessWidget {
         );
         return;
       }
-      if (kIsWeb) {
-        await audioPlayer.play(UrlSource(path));
+      if (_isPlaying) {
+        await audioPlayer.pause();
+        if (mounted) setState(() => _isPlaying = false);
       } else {
-        await audioPlayer.play(DeviceFileSource(path));
+        await audioPlayer.stop();
+        if (kIsWeb) {
+          await audioPlayer.play(UrlSource(path));
+        } else {
+          await audioPlayer.play(DeviceFileSource(path));
+        }
+        if (mounted) setState(() => _isPlaying = true);
       }
     } catch (e) {
+      if (mounted) setState(() => _isPlaying = false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
