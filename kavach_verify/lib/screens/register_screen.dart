@@ -85,7 +85,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           'assets/images/kavach_logo.png',
                           width: 64,
                           height: 64,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0, -0.15),
                         ),
                       )
                       .animate()

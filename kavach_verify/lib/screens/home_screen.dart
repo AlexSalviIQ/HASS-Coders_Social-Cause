@@ -513,25 +513,6 @@ class _DetectionFeedCard extends StatelessWidget {
   final int index;
   const _DetectionFeedCard({required this.item, required this.index});
 
-  IconData get _categoryIcon {
-    switch (item.category) {
-      case 'text':
-        return Icons.text_fields_rounded;
-      case 'image':
-        return Icons.image_rounded;
-      case 'video':
-        return Icons.videocam_rounded;
-      case 'voice':
-        return Icons.mic_rounded;
-      case 'document':
-        return Icons.description_rounded;
-      case 'link':
-        return Icons.link_rounded;
-      default:
-        return Icons.warning_rounded;
-    }
-  }
-
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
@@ -572,120 +553,142 @@ class _DetectionFeedCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
+        child: IntrinsicHeight(
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Color bar
               Container(
-                width: 44,
-                height: 44,
+                width: 5,
                 decoration: BoxDecoration(
-                  color: _categoryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: _categoryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    bottomLeft: Radius.circular(14),
+                  ),
                 ),
-                child: Icon(_categoryIcon, color: _categoryColor, size: 22),
               ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.danger.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: const Text(
-                            '⚠ FAKE',
-                            style: TextStyle(
-                              color: AppColors.danger,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.danger.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text(
+                              '⚠ FAKE',
+                              style: TextStyle(
+                                color: AppColors.danger,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          timeAgo,
-                          style: const TextStyle(
-                            color: AppColors.mediumGrey,
-                            fontSize: 10,
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _categoryColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              item.category,
+                              style: TextStyle(
+                                color: _categoryColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: isDark ? AppColors.white : AppColors.charcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.mediumGrey
-                            : AppColors.darkGrey,
-                        fontSize: 11,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: AppColors.mediumGrey,
-                        ),
-                        const SizedBox(width: 3),
-                        Flexible(
-                          child: Text(
-                            item.location,
-                            overflow: TextOverflow.ellipsis,
+                          const Spacer(),
+                          Text(
+                            timeAgo,
                             style: const TextStyle(
                               color: AppColors.mediumGrey,
                               fontSize: 10,
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: isDark ? AppColors.white : AppColors.charcoal,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.mediumGrey
+                              : AppColors.darkGrey,
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: AppColors.mediumGrey,
                           ),
-                          decoration: BoxDecoration(
-                            color: _categoryColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            '${(item.confidenceScore * 100).toInt()}%',
-                            style: TextStyle(
-                              color: _categoryColor,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              item.location,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.mediumGrey,
+                                fontSize: 10,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _categoryColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              '${(item.confidenceScore * 100).toInt()}%',
+                              style: TextStyle(
+                                color: _categoryColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

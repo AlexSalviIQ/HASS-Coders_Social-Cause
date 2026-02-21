@@ -107,136 +107,146 @@ class _ShellScaffoldState extends State<ShellScaffold> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    // Hamburger LEFT
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.menu_rounded,
-                            color: Colors.white,
-                            size: 20,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  height: 56,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Hamburger LEFT
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.menu_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    // CENTERED logo + title
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.asset(
-                              'assets/images/kavach_logo.png',
-                              width: 42,
-                              height: 42,
-                              fit: BoxFit.contain,
+                      const SizedBox(width: 12),
+                      // CENTERED logo + title
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.asset(
+                                'assets/images/kavach_logo.png',
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.cover,
+                                alignment: const Alignment(0, -0.15),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Kavach',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.3,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 76,
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 400,
+                            const SizedBox(width: 6),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    const Text(
+                                      'Kavach',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.3,
+                                        height: 1.0,
                                       ),
-                                      transitionBuilder: (child, anim) {
-                                        return FadeTransition(
-                                          opacity: anim,
-                                          child: child,
-                                        );
-                                      },
-                                      child: Align(
-                                        key: ValueKey(_verifyIndex),
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                          _verifyWords[_verifyIndex],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.3,
-                                            height: 1.2,
+                                    ),
+                                    SizedBox(
+                                      width: 76,
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 400,
+                                        ),
+                                        transitionBuilder: (child, anim) {
+                                          return FadeTransition(
+                                            opacity: anim,
+                                            child: child,
+                                          );
+                                        },
+                                        child: Align(
+                                          key: ValueKey(_verifyIndex),
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            _verifyWords[_verifyIndex],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.3,
+                                              height: 1.0,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                _currentPageName,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w400,
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                                Text(
+                                  _currentPageName,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.65),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    // WhatsApp / Chat icon
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: _openWhatsApp,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF25D366),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF25D366,
-                                ).withValues(alpha: 0.3),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.chat,
-                            color: Colors.white,
-                            size: 18,
+                      const SizedBox(width: 12),
+                      // WhatsApp / Chat icon
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: _openWhatsApp,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF25D366),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF25D366,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.chat,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -269,8 +279,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -278,7 +288,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                             AppColors.emeraldGreenLight,
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.emeraldGreen.withValues(
@@ -289,12 +299,13 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         child: Image.asset(
                           'assets/images/kavach_logo.png',
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.contain,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0, -0.15),
                         ),
                       ),
                     ).animate().fadeIn(duration: 300.ms),

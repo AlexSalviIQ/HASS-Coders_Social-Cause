@@ -139,25 +139,6 @@ class _LibraryCard extends StatelessWidget {
   final int index;
   const _LibraryCard({required this.item, required this.index});
 
-  IconData get _categoryIcon {
-    switch (item.category) {
-      case 'text':
-        return Icons.text_fields_rounded;
-      case 'image':
-        return Icons.image_rounded;
-      case 'video':
-        return Icons.videocam_rounded;
-      case 'voice':
-        return Icons.mic_rounded;
-      case 'document':
-        return Icons.description_rounded;
-      case 'link':
-        return Icons.link_rounded;
-      default:
-        return Icons.warning_rounded;
-    }
-  }
-
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
@@ -220,34 +201,10 @@ class _LibraryCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Icon area
-              Container(
-                width: 52,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: _categoryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        _categoryIcon,
-                        color: _categoryColor,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
               // Content
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                  padding: const EdgeInsets.fromLTRB(10, 12, 12, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

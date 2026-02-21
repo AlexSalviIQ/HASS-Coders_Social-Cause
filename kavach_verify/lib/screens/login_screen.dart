@@ -74,7 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           'assets/images/kavach_logo.png',
                           width: 72,
                           height: 72,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(0, -0.15),
                         ),
                       )
                       .animate()

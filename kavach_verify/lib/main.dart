@@ -171,12 +171,13 @@ class _KavachSplashState extends State<_KavachSplash>
               children: [
                 // Logo
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   child: Image.asset(
                     'assets/images/kavach_logo.png',
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.contain,
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                    alignment: const Alignment(0, -0.15),
                   ),
                 ),
                 // Text slides in from right
@@ -190,7 +191,8 @@ class _KavachSplashState extends State<_KavachSplash>
                       children: [
                         Row(
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
                           children: [
                             const Text(
                               'Kavach',
@@ -199,7 +201,7 @@ class _KavachSplashState extends State<_KavachSplash>
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF1A237E),
                                 letterSpacing: -0.5,
-                                height: 1.2,
+                                height: 1.0,
                               ),
                             ),
                             SizedBox(
@@ -222,7 +224,7 @@ class _KavachSplashState extends State<_KavachSplash>
                                       fontWeight: FontWeight.w700,
                                       color: Color(0xFF388E3C),
                                       letterSpacing: -0.3,
-                                      height: 1.2,
+                                      height: 1.0,
                                     ),
                                   ),
                                 ),
