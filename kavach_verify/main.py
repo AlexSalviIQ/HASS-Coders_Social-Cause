@@ -2,7 +2,7 @@
 
 
 import os
-from typing import Optional, Union
+from typing import Optional, Union, List
 import cv2
 import requests
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,8 +80,16 @@ def download_twilio_media(media_url, auth_sid, auth_token, content_type="image/j
 # --- HELPER 2: AI IMAGE CHECK WITH THRESHOLDS ---
 def check_image_for_ai(image_path):
     try:
-        with open(image_path, "rb") as f:
-            image_data = f.read()
+        from PIL import Image
+        import io
+
+        # Re-encode as JPEG to ensure HF API can parse it (handles PNG/WebP/etc.)
+        img = Image.open(image_path)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG")
+        image_data = buf.getvalue()
         
         response = requests.post(API_URL, headers=headers, data=image_data)
         
@@ -810,6 +818,43 @@ def web_api_verify(
             print("🛣️ Intent: Video Deepfake Check")
             category, visual_msg = check_video_for_ai(temp_file_path)
             final_message += f"🎥 *Video Forensics:*\n{visual_msg}\n\n"
+        
+        elif file_ext.endswith(('.pdf', '.doc', '.docx', '.txt')):
+            print("🛣️ Intent: Document Analysis")
+            doc_text = ""
+            if file_ext.endswith('.pdf'):
+                try:
+                    import fitz  # PyMuPDF
+                    pdf_doc = fitz.open(temp_file_path)
+                    for page in pdf_doc:
+                        doc_text += page.get_text()
+                    pdf_doc.close()
+                except ImportError:
+                    try:
+                        import PyPDF2
+                        with open(temp_file_path, 'rb') as pdf_file:
+                            reader = PyPDF2.PdfReader(pdf_file)
+                            for page in reader.pages:
+                                doc_text += (page.extract_text() or "")
+                    except ImportError:
+                        doc_text = ""
+                except Exception as e:
+                    print(f"❌ PDF Read Error: {e}")
+                    doc_text = ""
+            elif file_ext.endswith('.txt'):
+                try:
+                    with open(temp_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        doc_text = f.read()
+                except Exception as e:
+                    print(f"❌ TXT Read Error: {e}")
+            
+            if doc_text.strip():
+                fact_check = verify_news_claim(doc_text[:3000])
+                final_message += f"📄 *Document Analysis:*\n{fact_check}\n\n"
+                category = "FAKE" if "FALSE" in fact_check.upper() or "MISLEADING" in fact_check.upper() else "REAL"
+            else:
+                final_message += "📄 Could not extract text from this document. Try sending an image or text instead.\n\n"
+                category = "ERROR"
             
         else:
             caption = claim_text.lower() if claim_text else ""
@@ -1099,35 +1144,44 @@ def list_detections(user_id: Optional[str] = None, limit: int = 50, offset: int 
 
 @app.post("/api/detections")
 def create_detection(req: CreateDetectionRequest):
-    try:
-        new_detection = supabase.table("detections").insert({
-            "user_id": req.user_id,
-            "title": req.title,
-            "description": req.description,
-            "image_url": req.image_url,
-            "location": req.location or "",
-            "category": req.category,
-            "confidence_score": req.confidence_score,
-            "analysis_details": req.analysis_details,
-            "is_fake": req.is_fake,
-            "detected_at": datetime.utcnow().isoformat(),
-        }).execute()
-
-        # Increment user's total_verified count
+    import time
+    for attempt in range(3):
         try:
-            user_result = supabase.table("users").select("total_verified").eq("id", req.user_id).execute()
-            if user_result.data:
-                current_count = user_result.data[0].get("total_verified", 0)
-                supabase.table("users").update({
-                    "total_verified": current_count + 1
-                }).eq("id", req.user_id).execute()
-        except:
-            pass  # Don't fail the detection creation if stats update fails
+            new_detection = supabase.table("detections").insert({
+                "user_id": req.user_id,
+                "title": req.title,
+                "description": req.description,
+                "image_url": req.image_url,
+                "location": req.location or "",
+                "category": req.category,
+                "confidence_score": req.confidence_score,
+                "analysis_details": req.analysis_details,
+                "is_fake": req.is_fake,
+                "detected_at": datetime.utcnow().isoformat(),
+            }).execute()
 
-        return {"status": "success", "detection": new_detection.data[0]}
-    except Exception as e:
-        print(f"❌ Create Detection Error: {e}")
-        return {"status": "error", "message": str(e)}
+            # Increment user's total_verified count
+            try:
+                user_result = supabase.table("users").select("total_verified").eq("id", req.user_id).execute()
+                if user_result.data:
+                    current_count = user_result.data[0].get("total_verified", 0)
+                    supabase.table("users").update({
+                        "total_verified": current_count + 1
+                    }).eq("id", req.user_id).execute()
+            except:
+                pass  # Don't fail the detection creation if stats update fails
+
+            return {"status": "success", "detection": new_detection.data[0]}
+        except OSError as e:
+            if attempt < 2 and "10035" in str(e):
+                print(f"⚠️ Supabase socket retry {attempt+1}/3...")
+                time.sleep(0.5)
+                continue
+            print(f"❌ Create Detection Error: {e}")
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            print(f"❌ Create Detection Error: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 @app.get("/api/detections/{detection_id}")
@@ -1214,20 +1268,29 @@ def get_chat_history(user_id: str, limit: int = 100, offset: int = 0):
 
 @app.post("/api/chat/message")
 def save_chat_message(req: SaveChatMessageRequest):
-    try:
-        new_msg = supabase.table("chat_messages").insert({
-            "user_id": req.user_id,
-            "text": req.text,
-            "is_user": req.is_user,
-            "attachment_path": req.attachment_path,
-            "attachment_type": req.attachment_type,
-            "created_at": datetime.utcnow().isoformat(),
-        }).execute()
+    import time
+    for attempt in range(3):
+        try:
+            new_msg = supabase.table("chat_messages").insert({
+                "user_id": req.user_id,
+                "text": req.text,
+                "is_user": req.is_user,
+                "attachment_path": req.attachment_path,
+                "attachment_type": req.attachment_type,
+                "created_at": datetime.utcnow().isoformat(),
+            }).execute()
 
-        return {"status": "success", "message": new_msg.data[0]}
-    except Exception as e:
-        print(f"❌ Save Message Error: {e}")
-        return {"status": "error", "message": str(e)}
+            return {"status": "success", "message": new_msg.data[0]}
+        except OSError as e:
+            if attempt < 2 and "10035" in str(e):
+                print(f"⚠️ Supabase socket retry {attempt+1}/3...")
+                time.sleep(0.5)
+                continue
+            print(f"❌ Save Message Error: {e}")
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            print(f"❌ Save Message Error: {e}")
+            return {"status": "error", "message": str(e)}
 
 
 # =====================================================================

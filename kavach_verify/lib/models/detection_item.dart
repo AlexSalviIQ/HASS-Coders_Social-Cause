@@ -71,6 +71,17 @@ class ChatMessage {
     this.attachmentPath,
     this.attachmentType,
   });
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: (json['id'] ?? '').toString(),
+      text: json['text'] ?? '',
+      isUser: json['is_user'] ?? true,
+      timestamp: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      attachmentPath: json['attachment_path'],
+      attachmentType: json['attachment_type'],
+    );
+  }
 }
 
 class UserProfile {
@@ -89,4 +100,15 @@ class UserProfile {
     required this.accuracyScore,
     required this.communityRank,
   });
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      avatarUrl: json['avatar_url'] ?? '',
+      totalVerified: json['total_verified'] ?? 0,
+      accuracyScore: (json['accuracy_score'] ?? 0.0).toDouble(),
+      communityRank: json['community_rank'] ?? 'Beginner',
+    );
+  }
 }

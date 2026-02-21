@@ -1,0 +1,29 @@
+﻿Analyzing kavach_verify...                                      
+
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:125:7 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\screens\chat_screen.dart:652:57 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\chat_screen.dart:652:61 - unnecessary_underscores
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:1216:21 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\screens\profile_screen.dart:1218:21 - deprecated_member_use
+
+flutter : 5 issues 
+found. (ran in 2.5s)
+At line:1 char:1
++ flutter analyze 
+--no-pub 2>&1 | 
+Out-File -FilePath 
+analyze_output.txt 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (5 issue   
+ s found. (ran in    
+ 2.5s):String) [    
+], RemoteExcepti    
+on
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

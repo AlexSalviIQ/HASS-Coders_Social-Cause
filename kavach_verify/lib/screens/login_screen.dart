@@ -32,14 +32,13 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
       _error = null;
     });
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final err = auth.login(
+    final err = await auth.login(
       _emailController.text.trim(),
       _passwordController.text,
     );
+    if (!mounted) return;
     if (err != null) {
       setState(() {
         _isLoading = false;

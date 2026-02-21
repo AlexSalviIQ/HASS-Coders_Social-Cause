@@ -1,15 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
+import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  Map<String, dynamic> _stats = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    final result = await ApiService.getCommunityStats();
+    if (!mounted) return;
+    if (result['status'] == 'success') {
+      setState(() {
+        _stats = result;
+        _loading = false;
+      });
+    } else {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final profile = mockProfile;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -45,7 +78,9 @@ class CommunityScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile.communityRank,
+                        auth.communityRank.isNotEmpty
+                            ? auth.communityRank
+                            : 'Fact Checker',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -54,7 +89,7 @@ class CommunityScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${profile.totalVerified} verifications • ${profile.accuracyScore}% accuracy',
+                        '${auth.totalVerified} verifications • ${_stats['accuracy_score'] ?? 95}% accuracy',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 12,
@@ -91,7 +126,7 @@ class CommunityScreen extends StatelessWidget {
               children: [
                 _PointCard(
                   label: 'Text Checks',
-                  points: '52',
+                  points: '${_stats['text_checks'] ?? 0}',
                   icon: Icons.text_fields_rounded,
                   color: const Color(0xFF5B7DB1),
                   delay: 0,
@@ -99,7 +134,7 @@ class CommunityScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 _PointCard(
                   label: 'Media Checks',
-                  points: '68',
+                  points: '${_stats['media_checks'] ?? 0}',
                   icon: Icons.image_rounded,
                   color: const Color(0xFFD4714E),
                   delay: 80,
@@ -107,7 +142,7 @@ class CommunityScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 _PointCard(
                   label: 'Doc Checks',
-                  points: '27',
+                  points: '${_stats['doc_checks'] ?? 0}',
                   icon: Icons.description_rounded,
                   color: const Color(0xFF7B68AE),
                   delay: 160,

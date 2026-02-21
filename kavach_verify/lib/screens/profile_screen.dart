@@ -6,9 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -74,15 +74,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    _name = auth.username.isNotEmpty ? auth.username : mockProfile.name;
-    _email = auth.email.isNotEmpty ? auth.email : mockProfile.email;
+    _name = auth.name.isNotEmpty
+        ? auth.name
+        : (auth.username.isNotEmpty ? auth.username : 'User');
+    _email = auth.email.isNotEmpty ? auth.email : '';
+    _phone = auth.phone.isNotEmpty ? auth.phone : '+91 98765 43210';
+    _bio = auth.bio.isNotEmpty
+        ? auth.bio
+        : 'Digital truth seeker • Fighting misinformation';
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final p = mockProfile;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -264,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _StatCard(
                   label: 'Verified',
-                  value: '${p.totalVerified}',
+                  value: '${auth.totalVerified}',
                   icon: Icons.verified_rounded,
                   color: AppColors.emeraldGreen,
                   delay: 0,
@@ -272,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 10),
                 _StatCard(
                   label: 'Rank',
-                  value: p.communityRank.split(' ').first,
+                  value: auth.communityRank.split(' ').first,
                   icon: Icons.emoji_events_rounded,
                   color: const Color(0xFFF39C12),
                   delay: 100,
@@ -308,7 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          p.communityRank,
+                          auth.communityRank,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -780,6 +786,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     _bio = bioC.text.trim();
                                   });
                                   Navigator.pop(ctx);
+                                  // Save to backend
+                                  final auth = Provider.of<AuthProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+                                  auth.updateProfile(
+                                    name: nameC.text.trim().isNotEmpty
+                                        ? nameC.text.trim()
+                                        : null,
+                                    email: emailC.text.trim().isNotEmpty
+                                        ? emailC.text.trim()
+                                        : null,
+                                    phone: phone.isNotEmpty ? phone : null,
+                                    bio: bioC.text.trim(),
+                                  );
                                   _snack('Profile updated successfully! ✨');
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -939,6 +960,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
+                // Submit feedback to backend
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                if (auth.userId.isNotEmpty && rating > 0) {
+                  ApiService.submitFeedback(
+                    userId: auth.userId,
+                    rating: rating,
+                    message: controller.text.trim(),
+                  );
+                }
                 _snack('Feedback submitted! Thank you 💚');
               },
               style: ElevatedButton.styleFrom(

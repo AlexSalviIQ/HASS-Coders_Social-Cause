@@ -11,9 +11,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:video_player/video_player.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../models/detection_item.dart';
+import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? initialAttachmentPath;
@@ -32,7 +34,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _messages = List.from(mockChatMessages);
+  final List<ChatMessage> _messages = [];
   final ImagePicker _imagePicker = ImagePicker();
   final AudioRecorder _audioRecorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -43,6 +45,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   Timer? _recordingTimer;
   final List<Map<String, String>> _pendingAttachments = [];
 
+  String get _userId {
+    try {
+      return Provider.of<AuthProvider>(context, listen: false).userId;
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +60,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       final hasText = _textController.text.trim().isNotEmpty;
       if (hasText != _hasText) setState(() => _hasText = hasText);
     });
+    _loadChatHistory();
     if (widget.initialAttachmentPath != null &&
         widget.initialAttachmentType != null) {
       WidgetsBinding.instance.addPostFrameCallback((v) {
@@ -59,6 +70,19 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           widget.initialAttachmentName ?? 'file',
         );
       });
+    }
+  }
+
+  Future<void> _loadChatHistory() async {
+    if (_userId.isEmpty) return;
+    final result = await ApiService.getChatHistory(userId: _userId);
+    if (!mounted) return;
+    if (result['status'] == 'success') {
+      final msgs = (result['messages'] as List?) ?? [];
+      setState(() {
+        _messages.addAll(msgs.map((m) => ChatMessage.fromJson(m)));
+      });
+      _scrollToBottom();
     }
   }
 
@@ -97,12 +121,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _sendPendingAttachments() {
-    if (_pendingAttachments.isEmpty && _textController.text.trim().isEmpty)
+    if (_pendingAttachments.isEmpty && _textController.text.trim().isEmpty) {
       return;
+    }
     final attachments = List<Map<String, String>>.from(_pendingAttachments);
     final text = _textController.text.trim();
     setState(() {
-      // Send each attachment as a message
       for (final att in attachments) {
         _messages.add(
           ChatMessage(
@@ -115,7 +139,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
         );
       }
-      // Send text message if any
       if (text.isNotEmpty) {
         _messages.add(
           ChatMessage(
@@ -132,61 +155,69 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _isTyping = true;
     });
     _scrollToBottom();
-    // AI response: respond to the last attachment or to text
-    if (attachments.isNotEmpty) {
-      _simulateAIResponse(
-        attachments.last['type'] ?? '',
-        attachments.last['name'] ?? '',
+
+    // Save user messages to backend
+    for (final att in attachments) {
+      ApiService.saveChatMessage(
+        userId: _userId,
+        text: att['name'] ?? 'file',
+        isUser: true,
+        attachmentPath: att['path'],
+        attachmentType: att['type'],
       );
-    } else if (text.isNotEmpty) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        setState(() {
-          _isTyping = false;
-          _messages.add(
-            ChatMessage(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              text: _getAIResponse(text),
-              isUser: false,
-              timestamp: DateTime.now(),
-            ),
-          );
-        });
-        _scrollToBottom();
-      });
     }
+    if (text.isNotEmpty) {
+      ApiService.saveChatMessage(userId: _userId, text: text, isUser: true);
+    }
+
+    // Call /api/verify for AI analysis
+    _callVerifyAPI(
+      claimText: text.isNotEmpty ? text : null,
+      filePath: attachments.isNotEmpty ? attachments.last['path'] : null,
+      attachmentType: attachments.isNotEmpty ? attachments.last['type'] : null,
+    );
   }
 
-  void _simulateAIResponse(String type, String name) {
-    final delay = type == 'video' ? 4 : 3;
-    Future.delayed(Duration(seconds: delay), () {
+  Future<void> _callVerifyAPI({
+    String? claimText,
+    String? filePath,
+    String? attachmentType,
+  }) async {
+    try {
+      final result = await ApiService.verify(
+        claimText: claimText,
+        filePath: filePath,
+      );
+
       if (!mounted) return;
+
       String response;
-      switch (type) {
-        case 'image':
-          response =
-              '🔍 Analyzing your image...\n\n⚠️ **MANIPULATED IMAGE DETECTED**\nConfidence: 91%\n\n• Error Level Analysis reveals inconsistent compression.\n• Metadata shows editing software.\n• Color histogram anomalies detected.\n\nThis image appears digitally altered.';
-          break;
-        case 'video':
-          response =
-              '🔍 Analyzing video content...\n\n⚠️ **DEEPFAKE VIDEO DETECTED**\nConfidence: 93%\n\n• Facial landmark inconsistencies detected.\n• Lip-sync below natural threshold.\n• Temporal artifacts in frames.\n• Audio-visual sync anomalies.';
-          break;
-        case 'document':
-          response =
-              '🔍 Analyzing document: $name\n\n⚠️ **FORGED DOCUMENT SUSPECTED**\nConfidence: 89%\n\n• Font mismatch with official templates.\n• Consumer software metadata.\n• Missing digital signatures.\n• Header formatting inconsistencies.';
-          break;
-        case 'govid':
-          response =
-              '🔍 Verifying Government ID...\n\n⚠️ **FAKE ID DETECTED**\nConfidence: 87%\n\n• Hologram pattern missing.\n• Font doesn\'t match official standard.\n• QR code data mismatch.\n• Photo shows signs of manipulation.';
-          break;
-        case 'voice':
-          response =
-              '🔍 Analyzing voice recording...\n\n⚠️ **AI-GENERATED VOICE DETECTED**\nConfidence: 88%\n\n• Unnatural micro-pauses detected.\n• Spectral analysis shows synthesis patterns.\n• Pitch variation below human norm.\n• Missing natural breathing artifacts.';
-          break;
-        default:
-          response =
-              '🔍 Analysis complete.\n\n✅ No strong indicators of manipulation found.';
+      if (result['status'] == 'success') {
+        response = result['message'] ?? 'Analysis complete.';
+
+        // Save detection to backend
+        final category = attachmentType ?? 'text';
+        final isFake =
+            (result['category'] ?? '').toString().toUpperCase() == 'FAKE';
+        final confidence = isFake ? 0.9 : 0.1;
+
+        if (_userId.isNotEmpty) {
+          ApiService.createDetection(
+            userId: _userId,
+            title: claimText ?? 'Media Verification',
+            description: response.length > 200
+                ? response.substring(0, 200)
+                : response,
+            category: category,
+            confidenceScore: confidence,
+            analysisDetails: response,
+            isFake: isFake,
+          );
+        }
+      } else {
+        response = result['message'] ?? 'Analysis failed. Please try again.';
       }
+
       setState(() {
         _isTyping = false;
         _messages.add(
@@ -199,28 +230,32 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
       });
       _scrollToBottom();
-    });
+
+      // Save AI response to backend
+      ApiService.saveChatMessage(
+        userId: _userId,
+        text: response,
+        isUser: false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: '❌ Could not reach the server. Please check your connection.',
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+      _scrollToBottom();
+    }
   }
 
   void _sendMessage(String text) {
-    // Use the unified send that handles both attachments and text
     _sendPendingAttachments();
-  }
-
-  String _getAIResponse(String text) {
-    final lower = text.toLowerCase();
-    if (lower.contains('http') ||
-        lower.contains('www') ||
-        lower.contains('.com')) {
-      return '🔍 Analyzing the link...\n\n⚠️ **SUSPICIOUS LINK**\nConfidence: 88%\n\nRecently registered domain with no verified ownership. Mimics a legitimate news portal.';
-    } else if (lower.contains('free') ||
-        lower.contains('win') ||
-        lower.contains('prize')) {
-      return '🔍 Analyzing...\n\n⚠️ **SCAM ALERT**\nConfidence: 95%\n\nCommon scam pattern offering fake rewards. No legitimate org sends unsolicited prizes.';
-    } else if (lower.contains('forward') || lower.contains('share')) {
-      return '🔍 Analyzing...\n\n⚠️ **MISINFORMATION**\nConfidence: 87%\n\nViral forward with unverified claims. No credible sources found.';
-    }
-    return '🔍 Analysis complete.\n\n✅ No strong indicators of fake content. Always verify from multiple credible sources.';
   }
 
   Future<void> _pickMediaOrVideo() async {
@@ -615,7 +650,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   : Image.file(
                                       File(path),
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Icon(
+                                      errorBuilder: (_, _, _) => Icon(
                                         Icons.image_rounded,
                                         color: AppColors.mediumGrey,
                                         size: 28,

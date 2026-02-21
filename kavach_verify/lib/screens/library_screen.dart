@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../models/detection_item.dart';
+import '../services/api_service.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -14,6 +14,28 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<DetectionItem> _allDetections = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetections();
+  }
+
+  Future<void> _fetchDetections() async {
+    final result = await ApiService.listDetections();
+    if (!mounted) return;
+    if (result['status'] == 'success') {
+      final list = (result['detections'] as List?) ?? [];
+      setState(() {
+        _allDetections = list.map((d) => DetectionItem.fromJson(d)).toList();
+        _loading = false;
+      });
+    } else {
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -22,9 +44,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   List<DetectionItem> get _filteredItems {
-    if (_searchQuery.isEmpty) return mockDetections;
+    if (_searchQuery.isEmpty) return _allDetections;
     final q = _searchQuery.toLowerCase();
-    return mockDetections.where((item) {
+    return _allDetections.where((item) {
       return item.title.toLowerCase().contains(q) ||
           item.description.toLowerCase().contains(q) ||
           item.category.toLowerCase().contains(q) ||
@@ -100,19 +122,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         // List
         Expanded(
-          child: items.isEmpty
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : items.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.search_off_rounded,
+                        _searchQuery.isNotEmpty
+                            ? Icons.search_off_rounded
+                            : Icons.inbox_rounded,
                         size: 48,
                         color: AppColors.mediumGrey.withValues(alpha: 0.4),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No results for "$_searchQuery"',
+                        _searchQuery.isNotEmpty
+                            ? 'No results for "$_searchQuery"'
+                            : 'No detections yet',
                         style: TextStyle(
                           color: AppColors.mediumGrey,
                           fontSize: 13,

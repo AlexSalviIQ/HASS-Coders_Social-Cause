@@ -4,12 +4,40 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../models/detection_item.dart';
+import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<DetectionItem> _detections = [];
+  bool _loadingDetections = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetections();
+  }
+
+  Future<void> _fetchDetections() async {
+    final result = await ApiService.listDetections(limit: 10);
+    if (!mounted) return;
+    if (result['status'] == 'success') {
+      final list = (result['detections'] as List?) ?? [];
+      setState(() {
+        _detections = list.map((d) => DetectionItem.fromJson(d)).toList();
+        _loadingDetections = false;
+      });
+    } else {
+      setState(() => _loadingDetections = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +152,33 @@ class HomeScreen extends StatelessWidget {
             ),
           ).animate().fadeIn(delay: 350.ms, duration: 350.ms),
           const SizedBox(height: 6),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: mockDetections.length,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemBuilder: (context, i) =>
-                _DetectionFeedCard(item: mockDetections[i], index: i),
-          ),
+          if (_loadingDetections)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_detections.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  'No detections yet. Start verifying content!',
+                  style: TextStyle(
+                    color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _detections.length,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemBuilder: (context, i) =>
+                  _DetectionFeedCard(item: _detections[i], index: i),
+            ),
           const SizedBox(height: 20),
         ],
       ),

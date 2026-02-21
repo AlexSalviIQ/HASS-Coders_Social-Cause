@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../services/api_service.dart';
+import '../providers/auth_provider.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -182,7 +185,7 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _proof.removeAt(index));
   }
 
-  void _submit() {
+  void _submit() async {
     if (_descController.text.trim().isEmpty &&
         _documentation.isEmpty &&
         _proof.isEmpty) {
@@ -190,17 +193,28 @@ class _ReportScreenState extends State<ReportScreen> {
       return;
     }
     setState(() => _isSubmitting = true);
-    // Simulate submission
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final result = await ApiService.submitReport(
+      userId: auth.userId,
+      description: _descController.text.trim(),
+      proofUrls: _proof.map((p) => p['path'] ?? '').toList(),
+      documentationUrls: _documentation.map((d) => d['path'] ?? '').toList(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (result['status'] == 'success') {
       _snack('Report submitted successfully! 🛡️');
       _descController.clear();
       setState(() {
         _documentation.clear();
         _proof.clear();
       });
-    });
+    } else {
+      _snack(result['message'] ?? 'Failed to submit report');
+    }
   }
 
   void _snack(String msg) {

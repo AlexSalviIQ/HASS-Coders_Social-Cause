@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 import '../models/detection_item.dart';
+import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 
 class LibraryDetailScreen extends StatefulWidget {
@@ -16,16 +16,27 @@ class LibraryDetailScreen extends StatefulWidget {
 
 class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
-  late final DetectionItem item;
-  final List<Map<String, String>> _comments = List.from(mockComments);
+  DetectionItem? item;
+  bool _loading = true;
+  final List<Map<String, String>> _comments = [];
 
   @override
   void initState() {
     super.initState();
-    item = mockDetections.firstWhere(
-      (d) => d.id == widget.detectionId,
-      orElse: () => mockDetections.first,
-    );
+    _fetchDetection();
+  }
+
+  Future<void> _fetchDetection() async {
+    final result = await ApiService.getDetection(widget.detectionId);
+    if (!mounted) return;
+    if (result['status'] == 'success' && result['detection'] != null) {
+      setState(() {
+        item = DetectionItem.fromJson(result['detection']);
+        _loading = false;
+      });
+    } else {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -35,7 +46,8 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
   }
 
   Color get _catColor {
-    switch (item.category) {
+    if (item == null) return AppColors.danger;
+    switch (item!.category) {
       case 'text':
         return const Color(0xFF667EEA);
       case 'image':
@@ -56,6 +68,33 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (item == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.mediumGrey,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Detection not found',
+              style: TextStyle(color: AppColors.mediumGrey),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => context.go('/library'),
+              child: const Text('Back to Library'),
+            ),
+          ],
+        ),
+      );
+    }
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -132,7 +171,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${(item.confidenceScore * 100).toInt()}% confidence',
+                        '${(item!.confidenceScore * 100).toInt()}% confidence',
                         style: TextStyle(
                           color: _catColor,
                           fontSize: 11,
@@ -144,7 +183,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  item.title,
+                  item!.title,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -162,7 +201,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      item.location,
+                      item!.location,
                       style: const TextStyle(
                         color: AppColors.mediumGrey,
                         fontSize: 12,
@@ -176,7 +215,9 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      DateFormat('MMM d, yyyy • HH:mm').format(item.detectedAt),
+                      DateFormat(
+                        'MMM d, yyyy • HH:mm',
+                      ).format(item!.detectedAt),
                       style: const TextStyle(
                         color: AppColors.mediumGrey,
                         fontSize: 12,
@@ -203,7 +244,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item.description,
+                  item!.description,
                   style: TextStyle(
                     fontSize: 14,
                     color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -256,7 +297,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    item.analysisDetails,
+                    item!.analysisDetails,
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,

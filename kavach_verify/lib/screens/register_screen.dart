@@ -43,14 +43,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _isLoading = true;
       _error = null;
     });
-    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final err = auth.register(
+    final err = await auth.register(
       _emailController.text.trim(),
       _usernameController.text.trim(),
       _passwordController.text,
     );
+    if (!mounted) return;
     if (err != null) {
       setState(() {
         _isLoading = false;
