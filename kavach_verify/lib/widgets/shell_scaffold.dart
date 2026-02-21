@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class ShellScaffold extends StatefulWidget {
@@ -62,7 +61,9 @@ class _ShellScaffoldState extends State<ShellScaffold> {
       canPop: _isHome,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          context.go('/home');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) context.go('/home');
+          });
         }
       },
       child: Scaffold(
@@ -192,11 +193,10 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: FaIcon(
-                              FontAwesomeIcons.whatsapp,
-                              color: Colors.white,
-                              size: 20,
+                          child: Center(
+                            child: CustomPaint(
+                              size: const Size(20, 20),
+                              painter: _WhatsAppLogoPainter(),
                             ),
                           ),
                         ),
@@ -355,42 +355,58 @@ class _ShellScaffoldState extends State<ShellScaffold> {
   ) {
     final isSelected = widget.currentPath == path;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+    final isActive =
+        isSelected; // Renamed for clarity in the new widget structure
+    return GestureDetector(
+          onTap: () {
+            Navigator.pop(context);
+            context.go(path);
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? (isDark
+                        ? AppColors.deepBlue.withValues(alpha: 0.2)
+                        : AppColors.deepBlue.withValues(alpha: 0.1))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: ListTile(
               dense: true,
-              visualDensity: const VisualDensity(vertical: -1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 0,
               ),
-              selected: isSelected,
-              selectedTileColor: isDark
-                  ? AppColors.deepBlueLight.withValues(alpha: 0.15)
-                  : AppColors.deepBlue.withValues(alpha: 0.08),
-              leading: Icon(
-                icon,
-                color: isSelected
-                    ? (isDark ? AppColors.deepBlueLight : AppColors.deepBlue)
-                    : (isDark ? AppColors.mediumGrey : AppColors.darkGrey),
-                size: 20,
+              leading: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppColors.deepBlue.withValues(alpha: 0.15)
+                      : (isDark
+                            ? AppColors.darkBorder.withValues(alpha: 0.5)
+                            : AppColors.lightGrey),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: isActive
+                      ? AppColors.deepBlue
+                      : (isDark ? AppColors.mediumGrey : AppColors.darkGrey),
+                ),
               ),
               title: Text(
                 label,
                 style: TextStyle(
-                  color: isSelected
-                      ? (isDark ? AppColors.white : AppColors.deepBlue)
-                      : (isDark ? AppColors.white : AppColors.darkGrey),
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 14,
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive
+                      ? (isDark ? AppColors.deepBlueLight : AppColors.deepBlue)
+                      : (isDark ? AppColors.white : AppColors.charcoal),
                 ),
               ),
-              onTap: () {
-                Navigator.pop(context);
-                context.go(path);
-              },
             ),
           ),
         )
@@ -406,4 +422,53 @@ class _ShellScaffoldState extends State<ShellScaffold> {
           curve: Curves.easeOutCubic,
         );
   }
+}
+
+/// Custom painter for the WhatsApp logo icon
+class _WhatsAppLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // Outer circle (chat bubble shape)
+    final center = Offset(w * 0.48, h * 0.46);
+    final radius = w * 0.36;
+    canvas.drawCircle(center, radius, paint);
+
+    // Small tail at bottom-left of bubble
+    final tailPath = Path()
+      ..moveTo(w * 0.22, h * 0.68)
+      ..quadraticBezierTo(w * 0.14, h * 0.88, w * 0.12, h * 0.92)
+      ..quadraticBezierTo(w * 0.24, h * 0.80, w * 0.36, h * 0.74);
+    canvas.drawPath(tailPath, paint..style = PaintingStyle.stroke);
+
+    // Phone handset inside the bubble
+    final phonePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round;
+
+    // Curved phone receiver shape
+    final phonePath = Path();
+    // Left earpiece
+    phonePath.moveTo(w * 0.30, h * 0.34);
+    phonePath.quadraticBezierTo(w * 0.28, h * 0.40, w * 0.34, h * 0.44);
+    // Mouthpiece connection
+    phonePath.quadraticBezierTo(w * 0.42, h * 0.50, w * 0.52, h * 0.54);
+    // Right earpiece
+    phonePath.quadraticBezierTo(w * 0.58, h * 0.56, w * 0.62, h * 0.50);
+    phonePath.quadraticBezierTo(w * 0.66, h * 0.44, w * 0.64, h * 0.38);
+    canvas.drawPath(phonePath, phonePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

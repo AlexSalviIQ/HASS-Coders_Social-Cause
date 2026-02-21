@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
@@ -340,18 +341,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       // Start recording
       try {
         if (await _audioRecorder.hasPermission()) {
+          RecordConfig config;
           String filePath;
           if (kIsWeb) {
+            // Web browsers support opus in webm container
+            config = const RecordConfig(
+              encoder: AudioEncoder.opus,
+              numChannels: 1,
+            );
             filePath = '';
           } else {
+            // Mobile supports AAC
+            config = const RecordConfig(
+              encoder: AudioEncoder.aacLc,
+              sampleRate: 44100,
+            );
             final dir = await getTemporaryDirectory();
             filePath =
                 '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
           }
-          await _audioRecorder.start(
-            const RecordConfig(encoder: AudioEncoder.aacLc, sampleRate: 44100),
-            path: filePath,
-          );
+          await _audioRecorder.start(config, path: filePath);
           setState(() {
             _isRecording = true;
             _recordingSeconds = 0;
@@ -365,7 +374,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           _snack('Microphone permission denied');
         }
       } catch (e) {
-        _snack('Cannot start recording');
+        _snack('Cannot start recording: $e');
       }
     }
   }
@@ -911,24 +920,13 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Future<void> _openFileNative(String path) async {
-    // Dynamic import approach — open_filex for mobile
     try {
       final file = File(path);
       if (await file.exists()) {
-        // Use url_launcher as fallback
-        final uri = Uri.file(path);
-        await launchUrlExternal(uri);
+        await OpenFilex.open(path);
       }
-    } catch (_) {}
-  }
-
-  Future<void> launchUrlExternal(Uri uri) async {
-    // This imports and uses open_filex at runtime
-    // For now use Process or url_launcher
-    try {
-      await Process.run('xdg-open', [uri.toFilePath()]);
     } catch (_) {
-      // Platform not supported - that's OK
+      // File cannot be opened
     }
   }
 
