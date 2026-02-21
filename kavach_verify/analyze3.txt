@@ -1,0 +1,27 @@
+﻿Analyzing kavach_verify...                                      
+
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:250:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:267:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:284:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:407:33 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\screens\chat_screen.dart:436:17 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\screens\chat_screen.dart:779:25 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\chat_screen.dart:779:29 - unnecessary_underscores
+
+flutter : 7 issues found. 
+(ran in 68.4s)
+At line:1 char:1
++ flutter analyze 2>&1 | 
+Out-File -FilePath 
+"analyze3.txt" -Encoding 
+ut ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpe    cified: 
+(7 issue    s found. (ran 
+in     68.4s):String)     
+[], RemoteExcept    ion
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 

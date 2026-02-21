@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,8 +9,15 @@ import '../data/mock_data.dart';
 import '../models/detection_item.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
+  final String? initialAttachmentPath;
+  final String? initialAttachmentType;
+  final String? initialAttachmentName;
+  const ChatScreen({
+    super.key,
+    this.initialAttachmentPath,
+    this.initialAttachmentType,
+    this.initialAttachmentName,
+  });
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -20,16 +29,26 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ImagePicker _imagePicker = ImagePicker();
   bool _hasText = false;
   bool _isTyping = false;
+  bool _isRecording = false;
 
   @override
   void initState() {
     super.initState();
     _textController.addListener(() {
       final hasText = _textController.text.trim().isNotEmpty;
-      if (hasText != _hasText) {
-        setState(() => _hasText = hasText);
-      }
+      if (hasText != _hasText) setState(() => _hasText = hasText);
     });
+    // Handle initial attachment from quick access
+    if (widget.initialAttachmentPath != null &&
+        widget.initialAttachmentType != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _addAttachment(
+          widget.initialAttachmentPath!,
+          widget.initialAttachmentType!,
+          widget.initialAttachmentName ?? 'file',
+        );
+      });
+    }
   }
 
   @override
@@ -51,9 +70,88 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _addAttachment(String path, String type, String name) {
+    String emoji;
+    switch (type) {
+      case 'image':
+        emoji = '📷';
+        break;
+      case 'video':
+        emoji = '🎥';
+        break;
+      case 'document':
+        emoji = '📄';
+        break;
+      case 'govid':
+        emoji = '🪪';
+        break;
+      default:
+        emoji = '📎';
+    }
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: '$emoji $name',
+          isUser: true,
+          timestamp: DateTime.now(),
+          attachmentPath: path,
+          attachmentType: type,
+        ),
+      );
+      _isTyping = true;
+    });
+    _scrollToBottom();
+    _simulateAIResponse(type, name);
+  }
+
+  void _simulateAIResponse(String type, String name) {
+    final delay = type == 'video' ? 4 : 3;
+    Future.delayed(Duration(seconds: delay), () {
+      if (!mounted) return;
+      String response;
+      switch (type) {
+        case 'image':
+          response =
+              '🔍 Analyzing your image...\n\n⚠️ **MANIPULATED IMAGE DETECTED**\nConfidence: 91%\n\n• Error Level Analysis reveals inconsistent compression.\n• Metadata shows editing software.\n• Color histogram anomalies detected.\n\nThis image appears digitally altered.';
+          break;
+        case 'video':
+          response =
+              '🔍 Analyzing video content...\n\n⚠️ **DEEPFAKE VIDEO DETECTED**\nConfidence: 93%\n\n• Facial landmark inconsistencies detected.\n• Lip-sync below natural threshold.\n• Temporal artifacts in frames.\n• Audio-visual sync anomalies.';
+          break;
+        case 'document':
+          response =
+              '🔍 Analyzing document: $name\n\n⚠️ **FORGED DOCUMENT SUSPECTED**\nConfidence: 89%\n\n• Font mismatch with official templates.\n• Consumer software metadata.\n• Missing digital signatures.\n• Header formatting inconsistencies.';
+          break;
+        case 'govid':
+          response =
+              '🔍 Verifying Government ID...\n\n⚠️ **FAKE ID DETECTED**\nConfidence: 87%\n\n• Hologram pattern missing.\n• Font doesn\'t match official standard.\n• QR code data mismatch.\n• Photo shows signs of manipulation.';
+          break;
+        case 'voice':
+          response =
+              '🔍 Analyzing voice recording...\n\n⚠️ **AI-GENERATED VOICE DETECTED**\nConfidence: 88%\n\n• Unnatural micro-pauses detected.\n• Spectral analysis shows synthesis patterns.\n• Pitch variation below human norm.\n• Missing natural breathing artifacts.';
+          break;
+        default:
+          response =
+              '🔍 Analysis complete.\n\n✅ No strong indicators of manipulation found.';
+      }
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: response,
+            isUser: false,
+            timestamp: DateTime.now(),
+          ),
+        );
+      });
+      _scrollToBottom();
+    });
+  }
+
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
-
     setState(() {
       _messages.add(
         ChatMessage(
@@ -68,8 +166,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       _isTyping = true;
     });
     _scrollToBottom();
-
-    // Simulate AI response
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() {
@@ -87,199 +183,155 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
   }
 
-  String _getAIResponse(String userText) {
-    final lowerText = userText.toLowerCase();
-    if (lowerText.contains('http') ||
-        lowerText.contains('www') ||
-        lowerText.contains('.com')) {
-      return '🔍 Analyzing the link you shared...\n\n⚠️ **SUSPICIOUS LINK DETECTED**\nConfidence: 88%\n\nThis URL leads to a recently registered domain with no verified ownership. The site mimics a legitimate news portal but contains unverified claims. We recommend not sharing this link further.';
-    } else if (lowerText.contains('free') ||
-        lowerText.contains('win') ||
-        lowerText.contains('prize')) {
-      return '🔍 Analyzing your text...\n\n⚠️ **SCAM ALERT**\nConfidence: 95%\n\nThis message follows a common scam pattern offering fake rewards. No legitimate organization sends unsolicited prize notifications via messaging apps. Please block and report the sender.';
-    } else if (lowerText.contains('forward') ||
-        lowerText.contains('whatsapp') ||
-        lowerText.contains('share')) {
-      return '🔍 Analyzing your message...\n\n⚠️ **MISINFORMATION DETECTED**\nConfidence: 87%\n\nThis appears to be a viral forward with unverified claims. Our cross-reference analysis found no credible sources supporting this information. Such chain messages often contain misleading or false claims.';
+  String _getAIResponse(String text) {
+    final lower = text.toLowerCase();
+    if (lower.contains('http') ||
+        lower.contains('www') ||
+        lower.contains('.com')) {
+      return '🔍 Analyzing the link...\n\n⚠️ **SUSPICIOUS LINK**\nConfidence: 88%\n\nRecently registered domain with no verified ownership. Mimics a legitimate news portal.';
+    } else if (lower.contains('free') ||
+        lower.contains('win') ||
+        lower.contains('prize')) {
+      return '🔍 Analyzing...\n\n⚠️ **SCAM ALERT**\nConfidence: 95%\n\nCommon scam pattern offering fake rewards. No legitimate org sends unsolicited prizes.';
+    } else if (lower.contains('forward') || lower.contains('share')) {
+      return '🔍 Analyzing...\n\n⚠️ **MISINFORMATION**\nConfidence: 87%\n\nViral forward with unverified claims. No credible sources found.';
     }
-    return '🔍 I\'ve analyzed your input.\n\n✅ **ANALYSIS COMPLETE**\n\nI couldn\'t find strong indicators of fake content in this text. However, always verify information from multiple credible sources. Would you like to send me something else to check?';
+    return '🔍 Analysis complete.\n\n✅ No strong indicators of fake content. Always verify from multiple credible sources.';
   }
 
-  Future<void> _pickImage() async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
-      if (image != null) {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              text: '📷 Image uploaded for verification',
-              isUser: true,
-              timestamp: DateTime.now(),
-              attachmentPath: image.path,
-              attachmentType: 'image',
-            ),
-          );
-          _isTyping = true;
-        });
-        _scrollToBottom();
-        // Simulate AI analysis
-        Future.delayed(const Duration(seconds: 3), () {
-          if (!mounted) return;
-          setState(() {
-            _isTyping = false;
-            _messages.add(
-              ChatMessage(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                text:
-                    '🔍 Analyzing your image...\n\n⚠️ **MANIPULATED IMAGE DETECTED**\nConfidence: 91%\n\n• Error Level Analysis reveals inconsistent compression.\n• Metadata shows signs of editing software usage.\n• Color histogram anomalies detected in certain regions.\n\nThis image appears to have been digitally altered.',
-                isUser: false,
-                timestamp: DateTime.now(),
-              ),
-            );
-          });
-          _scrollToBottom();
-        });
-      }
-    } catch (e) {
-      _showSnackBar('Unable to pick image');
-    }
-  }
-
-  Future<void> _pickCamera() async {
-    try {
-      final XFile? photo = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-      );
-      if (photo != null) {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              text: '📸 Photo captured for verification',
-              isUser: true,
-              timestamp: DateTime.now(),
-              attachmentPath: photo.path,
-              attachmentType: 'image',
-            ),
-          );
-          _isTyping = true;
-        });
-        _scrollToBottom();
-        Future.delayed(const Duration(seconds: 3), () {
-          if (!mounted) return;
-          setState(() {
-            _isTyping = false;
-            _messages.add(
-              ChatMessage(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                text:
-                    '🔍 Analyzing your photo...\n\n✅ **IMAGE ANALYSIS COMPLETE**\nConfidence: 94%\n\nThis appears to be an authentic, unmodified photograph. No signs of digital manipulation detected.',
-                isUser: false,
-                timestamp: DateTime.now(),
-              ),
-            );
-          });
-          _scrollToBottom();
-        });
-      }
-    } catch (e) {
-      _showSnackBar('Unable to access camera');
-    }
+  Future<void> _pickMediaOrVideo() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) =>
+          Container(
+                margin: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Image / Video',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _AttachOption(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Camera',
+                          color: const Color(0xFF5B7DB1),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            try {
+                              final f = await _imagePicker.pickImage(
+                                source: ImageSource.camera,
+                              );
+                              if (f != null)
+                                _addAttachment(f.path, 'image', f.name);
+                            } catch (e) {
+                              _snack('Camera unavailable');
+                            }
+                          },
+                        ),
+                        _AttachOption(
+                          icon: Icons.photo_library_rounded,
+                          label: 'Gallery',
+                          color: const Color(0xFF4E8B6E),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            try {
+                              final f = await _imagePicker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (f != null)
+                                _addAttachment(f.path, 'image', f.name);
+                            } catch (e) {
+                              _snack('Cannot access gallery');
+                            }
+                          },
+                        ),
+                        _AttachOption(
+                          icon: Icons.videocam_rounded,
+                          label: 'Video',
+                          color: const Color(0xFFB85C5C),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            try {
+                              final f = await _imagePicker.pickVideo(
+                                source: ImageSource.gallery,
+                              );
+                              if (f != null)
+                                _addAttachment(f.path, 'video', f.name);
+                            } catch (e) {
+                              _snack('Cannot pick video');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
+              .fadeIn(duration: 180.ms),
+    );
   }
 
   Future<void> _pickDocument() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'png', 'jpg'],
       );
-      if (result != null) {
-        final fileName = result.files.single.name;
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              text: '📄 Document uploaded: $fileName',
-              isUser: true,
-              timestamp: DateTime.now(),
-              attachmentPath: result.files.single.path,
-              attachmentType: 'document',
-            ),
-          );
-          _isTyping = true;
-        });
-        _scrollToBottom();
-        Future.delayed(const Duration(seconds: 3), () {
-          if (!mounted) return;
-          setState(() {
-            _isTyping = false;
-            _messages.add(
-              ChatMessage(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                text:
-                    '🔍 Analyzing document: $fileName\n\n⚠️ **FORGED DOCUMENT SUSPECTED**\nConfidence: 89%\n\n• Font analysis does not match official templates.\n• Metadata shows creation with consumer software.\n• Digital signatures are missing or invalid.\n• Formatting inconsistencies found in header section.',
-                isUser: false,
-                timestamp: DateTime.now(),
-              ),
-            );
-          });
-          _scrollToBottom();
-        });
+      if (result != null && result.files.isNotEmpty) {
+        _addAttachment(
+          result.files.single.path ?? '',
+          'document',
+          result.files.single.name,
+        );
       }
-    } catch (e) {
-      _showSnackBar('Unable to pick document');
+    } catch (_) {
+      _snack('Cannot pick document');
     }
   }
 
-  Future<void> _pickVideo() async {
-    try {
-      final XFile? video = await _imagePicker.pickVideo(
-        source: ImageSource.gallery,
-      );
-      if (video != null) {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              text: '🎥 Video uploaded for verification',
-              isUser: true,
-              timestamp: DateTime.now(),
-              attachmentPath: video.path,
-              attachmentType: 'video',
-            ),
-          );
-          _isTyping = true;
-        });
-        _scrollToBottom();
-        Future.delayed(const Duration(seconds: 4), () {
-          if (!mounted) return;
-          setState(() {
-            _isTyping = false;
-            _messages.add(
-              ChatMessage(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                text:
-                    '🔍 Analyzing video content...\n\n⚠️ **DEEPFAKE VIDEO DETECTED**\nConfidence: 93%\n\n• Facial landmark inconsistencies detected.\n• Lip-sync accuracy is below natural threshold.\n• Frame-by-frame analysis reveals temporal artifacts.\n• Audio-visual synchronization anomalies found.',
-                isUser: false,
-                timestamp: DateTime.now(),
-              ),
-            );
-          });
-          _scrollToBottom();
-        });
+  void _toggleVoiceRecording() {
+    setState(() {
+      if (_isRecording) {
+        _isRecording = false;
+        // Simulate voice upload
+        _addAttachment('voice_recording.aac', 'voice', 'Voice Message');
+      } else {
+        _isRecording = true;
       }
-    } catch (e) {
-      _showSnackBar('Unable to pick video');
-    }
+    });
   }
 
-  void _showSnackBar(String message) {
+  void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(msg),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -291,119 +343,110 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
+      builder: (ctx) =>
           Container(
-                margin: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkCard : AppColors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 12),
                     Container(
-                      width: 36,
+                      width: 32,
                       height: 4,
                       decoration: BoxDecoration(
                         color: AppColors.mediumGrey.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Attach Content',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.white : AppColors.charcoal,
-                        ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Attach Content',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _AttachmentOption(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Camera',
-                          color: const Color(0xFF667EEA),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _pickCamera();
-                          },
-                        ),
-                        _AttachmentOption(
+                        _AttachOption(
                           icon: Icons.photo_library_rounded,
-                          label: 'Gallery',
-                          color: const Color(0xFF43E97B),
+                          label: 'Image/Video',
+                          color: const Color(0xFF5B7DB1),
                           onTap: () {
-                            Navigator.pop(context);
-                            _pickImage();
+                            Navigator.pop(ctx);
+                            _pickMediaOrVideo();
                           },
                         ),
-                        _AttachmentOption(
-                          icon: Icons.videocam_rounded,
-                          label: 'Video',
-                          color: const Color(0xFFF5576C),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _pickVideo();
-                          },
-                        ),
-                        _AttachmentOption(
+                        _AttachOption(
                           icon: Icons.description_rounded,
                           label: 'Document',
-                          color: const Color(0xFFF093FB),
+                          color: const Color(0xFF7B68AE),
                           onTap: () {
-                            Navigator.pop(context);
+                            Navigator.pop(ctx);
                             _pickDocument();
+                          },
+                        ),
+                        _AttachOption(
+                          icon: Icons.badge_rounded,
+                          label: 'Gov ID',
+                          color: const Color(0xFF4E8B6E),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            try {
+                              final f = await _imagePicker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (f != null)
+                                _addAttachment(f.path, 'govid', f.name);
+                            } catch (_) {
+                              _snack('Cannot pick file');
+                            }
                           },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 28),
                   ],
                 ),
               )
               .animate()
-              .slideY(begin: 0.3, duration: 300.ms, curve: Curves.easeOutCubic)
-              .fadeIn(duration: 200.ms),
+              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
+              .fadeIn(duration: 180.ms),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       children: [
-        // Chat Messages
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
             itemCount: _messages.length + (_isTyping ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == _messages.length && _isTyping) {
+              if (index == _messages.length && _isTyping)
                 return _TypingIndicator();
-              }
-              final msg = _messages[index];
-              return _ChatBubble(message: msg, index: index);
+              return _ChatBubble(message: _messages[index], index: index);
             },
           ),
         ),
-        // Input Bar
+        // Input
         Container(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurface : AppColors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
                     offset: const Offset(0, -2),
                   ),
                 ],
@@ -412,38 +455,38 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 top: false,
                 child: Row(
                   children: [
-                    // Attachment Button
+                    // +
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(22),
                         onTap: _showAttachmentMenu,
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: AppColors.deepBlue.withValues(
-                              alpha: isDark ? 0.3 : 0.08,
+                              alpha: isDark ? 0.25 : 0.07,
                             ),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.add_rounded,
                             color: AppColors.deepBlue,
-                            size: 24,
+                            size: 22,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Text Field
+                    const SizedBox(width: 6),
+                    // Text field
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
                           color: isDark
                               ? AppColors.darkCard
-                              : AppColors.lightGrey.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(24),
+                              : AppColors.lightGrey.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(22),
                         ),
                         child: TextField(
                           controller: _textController,
@@ -451,16 +494,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                             hintText: 'Paste text, links, or message...',
                             hintStyle: TextStyle(
                               color: AppColors.mediumGrey,
-                              fontSize: 14,
+                              fontSize: 13,
                             ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 12,
+                              horizontal: 16,
+                              vertical: 10,
                             ),
                           ),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             color: isDark
                                 ? AppColors.white
                                 : AppColors.charcoal,
@@ -472,30 +515,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Mic / Send Button with animated crossfade
+                    const SizedBox(width: 6),
+                    // Mic / Send
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      transitionBuilder: (child, animation) {
-                        return ScaleTransition(
-                          scale: animation,
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                        scale: anim,
+                        child: FadeTransition(opacity: anim, child: child),
+                      ),
                       child: _hasText
                           ? Material(
                               key: const ValueKey('send'),
                               color: Colors.transparent,
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(22),
                                 onTap: () => _sendMessage(_textController.text),
                                 child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: const BoxDecoration(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
                                         AppColors.emeraldGreen,
@@ -507,32 +545,45 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   child: const Icon(
                                     Icons.send_rounded,
                                     color: Colors.white,
-                                    size: 20,
+                                    size: 18,
                                   ),
                                 ),
                               ),
                             )
-                          : Material(
+                          : GestureDetector(
                               key: const ValueKey('mic'),
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(24),
-                                onTap: () {
-                                  _showSnackBar('Voice recording coming soon');
-                                },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.deepBlue.withValues(
-                                      alpha: isDark ? 0.3 : 0.08,
+                              onLongPress: _toggleVoiceRecording,
+                              onLongPressUp: () {
+                                if (_isRecording) _toggleVoiceRecording();
+                              },
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(22),
+                                  onTap: _toggleVoiceRecording,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: _isRecording
+                                          ? AppColors.danger.withValues(
+                                              alpha: 0.15,
+                                            )
+                                          : AppColors.deepBlue.withValues(
+                                              alpha: isDark ? 0.25 : 0.07,
+                                            ),
+                                      shape: BoxShape.circle,
                                     ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.mic_rounded,
-                                    color: AppColors.deepBlue,
-                                    size: 22,
+                                    child: Icon(
+                                      _isRecording
+                                          ? Icons.stop_rounded
+                                          : Icons.mic_rounded,
+                                      color: _isRecording
+                                          ? AppColors.danger
+                                          : AppColors.deepBlue,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -543,8 +594,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ),
             )
             .animate()
-            .fadeIn(duration: 300.ms)
-            .slideY(begin: 0.1, duration: 300.ms, curve: Curves.easeOutCubic),
+            .fadeIn(duration: 250.ms)
+            .slideY(begin: 0.08, duration: 250.ms, curve: Curves.easeOutCubic),
       ],
     );
   }
@@ -553,7 +604,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final int index;
-
   const _ChatBubble({required this.message, required this.index});
 
   @override
@@ -562,6 +612,13 @@ class _ChatBubble extends StatelessWidget {
     final isUser = message.isUser;
     final timeStr =
         '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}';
+    final hasAttachment =
+        message.attachmentPath != null && message.attachmentPath!.isNotEmpty;
+    final isImage =
+        message.attachmentType == 'image' || message.attachmentType == 'govid';
+    final isDoc = message.attachmentType == 'document';
+    final isVideo = message.attachmentType == 'video';
+    final isVoice = message.attachmentType == 'voice';
 
     return Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -569,23 +626,22 @@ class _ChatBubble extends StatelessWidget {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.78,
             ),
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+            margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
               color: isUser
                   ? AppColors.emeraldGreen
                   : (isDark ? AppColors.darkCard : AppColors.aiBubble),
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18),
-                topRight: const Radius.circular(18),
-                bottomLeft: Radius.circular(isUser ? 18 : 4),
-                bottomRight: Radius.circular(isUser ? 4 : 18),
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(isUser ? 16 : 4),
+                bottomRight: Radius.circular(isUser ? 4 : 16),
               ),
               boxShadow: [
                 BoxShadow(
                   color: (isUser ? AppColors.emeraldGreen : Colors.black)
-                      .withValues(alpha: 0.08),
-                  blurRadius: 8,
+                      .withValues(alpha: 0.06),
+                  blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -593,60 +649,94 @@ class _ChatBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (!isUser)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.deepBlue,
-                                AppColors.deepBlueLight,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Center(
-                            child: Text('🛡️', style: TextStyle(fontSize: 10)),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'KavachVerify AI',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.deepBlueLight
-                                : AppColors.deepBlue,
-                          ),
-                        ),
-                      ],
+                // Attachment preview
+                if (hasAttachment && isUser && isImage)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
+                    child: _buildImagePreview(message.attachmentPath!),
                   ),
-                Text(
-                  message.text,
-                  style: TextStyle(
-                    color: isUser
-                        ? Colors.white
-                        : (isDark ? AppColors.lightGrey : AppColors.charcoal),
-                    fontSize: 14,
-                    height: 1.45,
+                if (hasAttachment && isUser && isVideo)
+                  _buildVideoPreview(isDark),
+                if (hasAttachment && isUser && isDoc)
+                  _buildDocPreview(message.text, isDark),
+                if (hasAttachment && isUser && isVoice)
+                  _buildVoicePreview(isDark),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    hasAttachment && isUser && (isImage || isVideo) ? 6 : 10,
+                    12,
+                    5,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  timeStr,
-                  style: TextStyle(
-                    color: isUser
-                        ? Colors.white.withValues(alpha: 0.7)
-                        : AppColors.mediumGrey,
-                    fontSize: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (!isUser)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      AppColors.deepBlue,
+                                      AppColors.deepBlueLight,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    '🛡️',
+                                    style: TextStyle(fontSize: 8),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'KavachVerify AI',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.deepBlueLight
+                                      : AppColors.deepBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (!(hasAttachment && isUser && isDoc))
+                        Text(
+                          message.text,
+                          style: TextStyle(
+                            color: isUser
+                                ? Colors.white
+                                : (isDark
+                                      ? AppColors.lightGrey
+                                      : AppColors.charcoal),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      const SizedBox(height: 3),
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          color: isUser
+                              ? Colors.white.withValues(alpha: 0.65)
+                              : AppColors.mediumGrey,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -654,89 +744,219 @@ class _ChatBubble extends StatelessWidget {
           ),
         )
         .animate()
-        .fadeIn(duration: 300.ms)
+        .fadeIn(duration: 250.ms)
         .slideX(
-          begin: isUser ? 0.1 : -0.1,
-          duration: 300.ms,
+          begin: isUser ? 0.08 : -0.08,
+          duration: 250.ms,
           curve: Curves.easeOutCubic,
         );
   }
-}
 
-class _TypingIndicator extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.aiBubble,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(4),
-            bottomRight: Radius.circular(18),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildImagePreview(String path) {
+    if (kIsWeb) {
+      return Container(
+        width: double.infinity,
+        height: 150,
+        color: AppColors.deepBlue.withValues(alpha: 0.1),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _TypingDot(delay: 0),
-            const SizedBox(width: 4),
-            _TypingDot(delay: 200),
-            const SizedBox(width: 4),
-            _TypingDot(delay: 400),
+            Icon(Icons.image_rounded, size: 40, color: AppColors.mediumGrey),
+            SizedBox(height: 4),
+            Text(
+              'Image Preview',
+              style: TextStyle(color: AppColors.mediumGrey, fontSize: 11),
+            ),
           ],
         ),
+      );
+    }
+    return Image.file(
+      File(path),
+      width: double.infinity,
+      height: 150,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        width: double.infinity,
+        height: 100,
+        color: AppColors.deepBlue.withValues(alpha: 0.1),
+        child: const Icon(
+          Icons.broken_image_rounded,
+          color: AppColors.mediumGrey,
+          size: 36,
+        ),
       ),
-    ).animate().fadeIn(duration: 200.ms);
+    );
   }
-}
 
-class _TypingDot extends StatelessWidget {
-  final int delay;
-
-  const _TypingDot({required this.delay});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildVideoPreview(bool isDark) {
     return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.mediumGrey,
-            shape: BoxShape.circle,
+      width: double.infinity,
+      height: 120,
+      margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            Icons.videocam_rounded,
+            color: Colors.white.withValues(alpha: 0.3),
+            size: 40,
           ),
-        )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .fadeIn(delay: Duration(milliseconds: delay))
-        .scaleXY(
-          begin: 0.6,
-          end: 1.0,
-          delay: Duration(milliseconds: delay),
-          duration: 600.ms,
-          curve: Curves.easeInOut,
-        );
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocPreview(String name, bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(13),
+          topRight: Radius.circular(13),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF7B68AE).withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.description_rounded,
+              color: Color(0xFF7B68AE),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'PDF Document',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoicePreview(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(13),
+          topRight: Radius.circular(13),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Waveform bars
+                Row(
+                  children: List.generate(18, (i) {
+                    final h = 6.0 + (i % 5) * 4.0 + (i % 3) * 2.0;
+                    return Container(
+                      width: 3,
+                      height: h,
+                      margin: const EdgeInsets.only(right: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '0:05',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _AttachmentOption extends StatelessWidget {
+class _AttachOption extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
-
-  const _AttachmentOption({
+  const _AttachOption({
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -745,19 +965,19 @@ class _AttachmentOption extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: Theme.of(context).brightness == Brightness.dark
                   ? AppColors.lightGrey
@@ -767,5 +987,63 @@ class _AttachmentOption extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _TypingIndicator extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.aiBubble,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _Dot(delay: 0),
+            const SizedBox(width: 3),
+            _Dot(delay: 180),
+            const SizedBox(width: 3),
+            _Dot(delay: 360),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 180.ms);
+  }
+}
+
+class _Dot extends StatelessWidget {
+  final int delay;
+  const _Dot({required this.delay});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+          width: 7,
+          height: 7,
+          decoration: const BoxDecoration(
+            color: AppColors.mediumGrey,
+            shape: BoxShape.circle,
+          ),
+        )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .fadeIn(delay: Duration(milliseconds: delay))
+        .scaleXY(
+          begin: 0.5,
+          end: 1.0,
+          delay: Duration(milliseconds: delay),
+          duration: 500.ms,
+          curve: Curves.easeInOut,
+        );
   }
 }

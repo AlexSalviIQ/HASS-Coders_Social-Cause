@@ -5,6 +5,8 @@ import 'screens/chat_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/library_detail_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/community_screen.dart';
+import 'screens/heatmap_screen.dart';
 import 'widgets/shell_scaffold.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -20,32 +22,33 @@ final GoRouter appRouter = GoRouter(
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
             child: const HomeScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
           ),
         ),
         GoRoute(
           path: '/chat',
-          pageBuilder: (context, state) => CustomTransitionPage(
-            key: state.pageKey,
-            child: const ChatScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-          ),
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            return CustomTransitionPage(
+              key: state.pageKey,
+              child: ChatScreen(
+                initialAttachmentPath: extra?['attachmentPath'] as String?,
+                initialAttachmentType: extra?['attachmentType'] as String?,
+                initialAttachmentName: extra?['attachmentName'] as String?,
+              ),
+              transitionsBuilder: (context, anim, _, child) =>
+                  FadeTransition(opacity: anim, child: child),
+            );
+          },
         ),
         GoRoute(
           path: '/library',
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
             child: const LibraryScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
           ),
           routes: [
             GoRoute(
@@ -55,32 +58,45 @@ final GoRouter appRouter = GoRouter(
                 child: LibraryDetailScreen(
                   detectionId: state.pathParameters['id'] ?? '',
                 ),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(1.0, 0.0);
-                      const end = Offset.zero;
-                      final tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: Curves.easeInOutCubic));
-                      return SlideTransition(
-                        position: animation.drive(tween),
-                        child: child,
-                      );
-                    },
+                transitionsBuilder: (context, anim, _, child) {
+                  final tween = Tween(
+                    begin: const Offset(1.0, 0.0),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeInOutCubic));
+                  return SlideTransition(
+                    position: anim.drive(tween),
+                    child: child,
+                  );
+                },
               ),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/community',
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const CommunityScreen(),
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ),
+        ),
+        GoRoute(
+          path: '/heatmap',
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const HeatmapScreen(),
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ),
         ),
         GoRoute(
           path: '/profile',
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
             child: const ProfileScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
           ),
         ),
       ],

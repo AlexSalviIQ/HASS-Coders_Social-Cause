@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
@@ -12,97 +14,93 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Quick Access Section
           Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
                 child: Text(
                   'Quick Verify',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                     color: isDark ? AppColors.white : AppColors.charcoal,
                   ),
                 ),
               )
               .animate()
-              .fadeIn(duration: 400.ms)
+              .fadeIn(duration: 350.ms)
               .slideY(
-                begin: -0.1,
-                duration: 400.ms,
+                begin: -0.08,
+                duration: 350.ms,
                 curve: Curves.easeOutCubic,
               ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Choose a content type to analyze',
+              'Pick a content type to verify',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
               ),
             ),
-          ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
-          const SizedBox(height: 16),
-          // Quick Access Cards Grid
+          ).animate().fadeIn(delay: 80.ms, duration: 280.ms),
+          const SizedBox(height: 14),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             child: GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.55,
               children: [
                 _QuickAccessCard(
-                  icon: Icons.photo_camera_rounded,
-                  label: 'Upload Photo',
-                  subtitle: 'Check images',
-                  gradient: const [Color(0xFF667EEA), Color(0xFF764BA2)],
+                  icon: Icons.photo_library_rounded,
+                  label: 'Image / Video',
+                  subtitle: 'Photos & clips',
+                  gradient: const [Color(0xFF5B7DB1), Color(0xFF7B9FD4)],
                   delay: 0,
-                  onTap: () => context.go('/chat'),
+                  onTap: () => _pickMediaOrVideo(context),
                 ),
                 _QuickAccessCard(
                   icon: Icons.description_rounded,
-                  label: 'Upload Document',
-                  subtitle: 'Verify docs',
-                  gradient: const [Color(0xFFF093FB), Color(0xFFF5576C)],
-                  delay: 100,
-                  onTap: () => context.go('/chat'),
+                  label: 'Document Verify',
+                  subtitle: 'PDFs & docs',
+                  gradient: const [Color(0xFF7B68AE), Color(0xFF9E8DD4)],
+                  delay: 80,
+                  onTap: () => _pickDocument(context),
                 ),
                 _QuickAccessCard(
-                  icon: Icons.mic_rounded,
-                  label: 'Send Voice',
-                  subtitle: 'Detect deepfakes',
-                  gradient: const [Color(0xFF4FACFE), Color(0xFF00F2FE)],
-                  delay: 200,
-                  onTap: () => context.go('/chat'),
+                  icon: Icons.badge_rounded,
+                  label: 'Gov ID Check',
+                  subtitle: 'ID verification',
+                  gradient: const [Color(0xFF4E8B6E), Color(0xFF6BAE8E)],
+                  delay: 160,
+                  onTap: () => _pickGovID(context),
                 ),
                 _QuickAccessCard(
-                  icon: Icons.videocam_rounded,
-                  label: 'Upload Video',
-                  subtitle: 'Analyze videos',
-                  gradient: const [Color(0xFF43E97B), Color(0xFF38F9D7)],
-                  delay: 300,
-                  onTap: () => context.go('/chat'),
+                  icon: Icons.map_rounded,
+                  label: 'Threat Heatmap',
+                  subtitle: 'View live threats',
+                  gradient: const [Color(0xFFB85C5C), Color(0xFFD47A7A)],
+                  delay: 240,
+                  onTap: () => context.go('/heatmap'),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 28),
-          // Latest Detections Section
+          const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
                 Container(
                   width: 4,
-                  height: 22,
+                  height: 20,
                   decoration: BoxDecoration(
                     color: AppColors.emeraldGreen,
                     borderRadius: BorderRadius.circular(2),
@@ -112,7 +110,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   'Latest Detections',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: isDark ? AppColors.white : AppColors.charcoal,
                   ),
@@ -123,30 +121,289 @@ class HomeScreen extends StatelessWidget {
                   child: Text(
                     'View All',
                     style: TextStyle(
-                      color: AppColors.deepBlue,
+                      color: AppColors.deepBlueLight,
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               ],
             ),
-          ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
-          const SizedBox(height: 8),
-          // Detection Feed
+          ).animate().fadeIn(delay: 350.ms, duration: 350.ms),
+          const SizedBox(height: 6),
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: mockDetections.length,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemBuilder: (context, index) {
-              return _DetectionFeedCard(
-                item: mockDetections[index],
-                index: index,
-              );
-            },
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            itemBuilder: (context, i) =>
+                _DetectionFeedCard(item: mockDetections[i], index: i),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  void _pickMediaOrVideo(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) =>
+          Container(
+                margin: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Image / Video',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _PickOption(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Camera',
+                          color: const Color(0xFF5B7DB1),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final file = await ImagePicker().pickImage(
+                              source: ImageSource.camera,
+                            );
+                            if (file != null && context.mounted) {
+                              context.go(
+                                '/chat',
+                                extra: {
+                                  'attachmentPath': file.path,
+                                  'attachmentType': 'image',
+                                  'attachmentName': file.name,
+                                },
+                              );
+                            }
+                          },
+                        ),
+                        _PickOption(
+                          icon: Icons.photo_library_rounded,
+                          label: 'Gallery',
+                          color: const Color(0xFF4E8B6E),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final file = await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                            );
+                            if (file != null && context.mounted) {
+                              context.go(
+                                '/chat',
+                                extra: {
+                                  'attachmentPath': file.path,
+                                  'attachmentType': 'image',
+                                  'attachmentName': file.name,
+                                },
+                              );
+                            }
+                          },
+                        ),
+                        _PickOption(
+                          icon: Icons.videocam_rounded,
+                          label: 'Video',
+                          color: const Color(0xFFB85C5C),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final file = await ImagePicker().pickVideo(
+                              source: ImageSource.gallery,
+                            );
+                            if (file != null && context.mounted) {
+                              context.go(
+                                '/chat',
+                                extra: {
+                                  'attachmentPath': file.path,
+                                  'attachmentType': 'video',
+                                  'attachmentName': file.name,
+                                },
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
+              .fadeIn(duration: 180.ms),
+    );
+  }
+
+  void _pickDocument(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+      );
+      if (result != null && result.files.isNotEmpty && context.mounted) {
+        context.go(
+          '/chat',
+          extra: {
+            'attachmentPath': result.files.single.path,
+            'attachmentType': 'document',
+            'attachmentName': result.files.single.name,
+          },
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _pickGovID(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) =>
+          Container(
+                margin: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Gov ID Check',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _PickOption(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Capture ID',
+                          color: const Color(0xFF4E8B6E),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final file = await ImagePicker().pickImage(
+                              source: ImageSource.camera,
+                            );
+                            if (file != null && context.mounted) {
+                              context.go(
+                                '/chat',
+                                extra: {
+                                  'attachmentPath': file.path,
+                                  'attachmentType': 'govid',
+                                  'attachmentName': file.name,
+                                },
+                              );
+                            }
+                          },
+                        ),
+                        _PickOption(
+                          icon: Icons.upload_file_rounded,
+                          label: 'Upload ID',
+                          color: const Color(0xFF7B68AE),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            final file = await ImagePicker().pickImage(
+                              source: ImageSource.gallery,
+                            );
+                            if (file != null && context.mounted) {
+                              context.go(
+                                '/chat',
+                                extra: {
+                                  'attachmentPath': file.path,
+                                  'attachmentType': 'govid',
+                                  'attachmentName': file.name,
+                                },
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .slideY(begin: 0.25, duration: 280.ms, curve: Curves.easeOutCubic)
+              .fadeIn(duration: 180.ms),
+    );
+  }
+}
+
+class _PickOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _PickOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.lightGrey
+                  : AppColors.darkGrey,
+            ),
+          ),
         ],
       ),
     );
@@ -155,12 +412,10 @@ class HomeScreen extends StatelessWidget {
 
 class _QuickAccessCard extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String subtitle;
+  final String label, subtitle;
   final List<Color> gradient;
   final int delay;
   final VoidCallback onTap;
-
   const _QuickAccessCard({
     required this.icon,
     required this.label,
@@ -175,7 +430,7 @@ class _QuickAccessCard extends StatelessWidget {
     return Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
             onTap: onTap,
             child: Container(
               decoration: BoxDecoration(
@@ -184,29 +439,29 @@ class _QuickAccessCard extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: gradient[0].withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: gradient[0].withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(icon, color: Colors.white, size: 22),
+                      child: Icon(icon, color: Colors.white, size: 20),
                     ),
                     const Spacer(),
                     Text(
@@ -214,14 +469,14 @@ class _QuickAccessCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                     ),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -232,19 +487,19 @@ class _QuickAccessCard extends StatelessWidget {
         )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 200 + delay),
-          duration: 400.ms,
+          delay: Duration(milliseconds: 180 + delay),
+          duration: 350.ms,
         )
         .slideY(
-          begin: 0.15,
-          delay: Duration(milliseconds: 200 + delay),
-          duration: 400.ms,
+          begin: 0.1,
+          delay: Duration(milliseconds: 180 + delay),
+          duration: 350.ms,
           curve: Curves.easeOutCubic,
         )
         .scale(
-          begin: const Offset(0.95, 0.95),
-          delay: Duration(milliseconds: 200 + delay),
-          duration: 400.ms,
+          begin: const Offset(0.96, 0.96),
+          delay: Duration(milliseconds: 180 + delay),
+          duration: 350.ms,
           curve: Curves.easeOutCubic,
         );
   }
@@ -253,7 +508,6 @@ class _QuickAccessCard extends StatelessWidget {
 class _DetectionFeedCard extends StatelessWidget {
   final DetectionItem item;
   final int index;
-
   const _DetectionFeedCard({required this.item, required this.index});
 
   IconData get _categoryIcon {
@@ -278,17 +532,17 @@ class _DetectionFeedCard extends StatelessWidget {
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
-        return const Color(0xFF667EEA);
+        return const Color(0xFF5B7DB1);
       case 'image':
-        return const Color(0xFFF5576C);
+        return const Color(0xFFD4714E);
       case 'video':
-        return const Color(0xFF43E97B);
+        return const Color(0xFF4E8B6E);
       case 'voice':
-        return const Color(0xFF4FACFE);
+        return const Color(0xFF6E8BC4);
       case 'document':
-        return const Color(0xFFF093FB);
+        return const Color(0xFF7B68AE);
       case 'link':
-        return const Color(0xFFF39C12);
+        return const Color(0xFFB8963C);
       default:
         return AppColors.danger;
     }
@@ -298,40 +552,37 @@ class _DetectionFeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final timeAgo = _formatTimeAgo(item.detectedAt);
-
     return GestureDetector(
           onTap: () => context.go('/library/detail/${item.id}'),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkCard : AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
                   color: (isDark ? Colors.black : AppColors.deepBlue)
-                      .withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                      .withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category Icon
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: _categoryColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                      color: _categoryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(_categoryIcon, color: _categoryColor, size: 24),
+                    child: Icon(_categoryIcon, color: _categoryColor, size: 22),
                   ),
-                  const SizedBox(width: 14),
-                  // Content
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,46 +591,46 @@ class _DetectionFeedCard extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                                horizontal: 7,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.danger.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppColors.danger.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(5),
                               ),
                               child: const Text(
                                 '⚠ FAKE',
                                 style: TextStyle(
                                   color: AppColors.danger,
-                                  fontSize: 10,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Text(
                               timeAgo,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.mediumGrey,
-                                fontSize: 11,
+                                fontSize: 10,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           item.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: isDark
                                 ? AppColors.white
                                 : AppColors.charcoal,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           item.description,
                           maxLines: 2,
@@ -388,41 +639,41 @@ class _DetectionFeedCard extends StatelessWidget {
                             color: isDark
                                 ? AppColors.mediumGrey
                                 : AppColors.darkGrey,
-                            fontSize: 12,
+                            fontSize: 11,
                             height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             Icon(
                               Icons.location_on_outlined,
-                              size: 14,
+                              size: 12,
                               color: AppColors.mediumGrey,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 3),
                             Text(
                               item.location,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.mediumGrey,
-                                fontSize: 11,
+                                fontSize: 10,
                               ),
                             ),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
+                                horizontal: 7,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: _categoryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
+                                color: _categoryColor.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
-                                '${(item.confidenceScore * 100).toInt()}% confident',
+                                '${(item.confidenceScore * 100).toInt()}%',
                                 style: TextStyle(
                                   color: _categoryColor,
-                                  fontSize: 10,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -439,22 +690,22 @@ class _DetectionFeedCard extends StatelessWidget {
         )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 500 + (index * 100)),
-          duration: 400.ms,
+          delay: Duration(milliseconds: 400 + (index * 80)),
+          duration: 350.ms,
         )
         .slideY(
-          begin: 0.08,
-          delay: Duration(milliseconds: 500 + (index * 100)),
-          duration: 400.ms,
+          begin: 0.06,
+          delay: Duration(milliseconds: 400 + (index * 80)),
+          duration: 350.ms,
           curve: Curves.easeOutCubic,
         );
   }
 
-  String _formatTimeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
+  String _formatTimeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('MMM d').format(dateTime);
+    return DateFormat('MMM d').format(dt);
   }
 }
