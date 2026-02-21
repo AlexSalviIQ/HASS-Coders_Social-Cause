@@ -675,7 +675,7 @@ def handle_whatsapp(
             pdf_filename = generate_official_report(c_type, topic, verdict_text)
             if pdf_filename:
                 pdf_link = f"{request.base_url}reports/{pdf_filename}"
-                response.message(f"📄 *Here is your Official Verification Report (Summary):*\n{pdf_link}\n\n🚨 *For official reporting, please visit:* https://kavachverify.app/report")
+                response.message(f"📄 *Here is your Official Verification Report (Summary):*\n{pdf_link}\n\n🚨 *For official reporting, please visit:* https://comforting-fairy-601850.netlify.app/")
             else:
                 response.message("Sorry, the report generator is currently busy.")
                 
@@ -1137,6 +1137,24 @@ def list_detections(user_id: Optional[str] = None, limit: int = 50, offset: int 
 @app.post("/api/detections")
 def create_detection(req: CreateDetectionRequest):
     import time
+    
+    # --- DEDUPLICATION CHECK ---
+    try:
+        existing = supabase.table("detections").select("*").eq(
+            "user_id", req.user_id
+        ).eq("title", req.title).eq(
+            "is_fake", req.is_fake
+        ).execute()
+        
+        if existing.data:
+            # Check if analysis_details match (same content verified again)
+            for det in existing.data:
+                if det.get("analysis_details", "")[:200] == req.analysis_details[:200]:
+                    print(f"⚠️ Duplicate detection skipped for user {req.user_id}")
+                    return {"status": "success", "detection": det}
+    except Exception as e:
+        print(f"⚠️ Dedup check failed, proceeding with insert: {e}")
+    
     for attempt in range(3):
         try:
             new_detection = supabase.table("detections").insert({

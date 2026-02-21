@@ -26,12 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchDetections() async {
-    final result = await ApiService.listDetections(limit: 10);
+    final result = await ApiService.listDetections(limit: 20);
     if (!mounted) return;
     if (result['status'] == 'success') {
       final list = (result['detections'] as List?) ?? [];
       setState(() {
-        _detections = list.map((d) => DetectionItem.fromJson(d)).toList();
+        _detections = list
+            .map((d) => DetectionItem.fromJson(d))
+            .where((d) => d.isFake)
+            .take(3)
+            .toList();
         _loadingDetections = false;
       });
     } else {
