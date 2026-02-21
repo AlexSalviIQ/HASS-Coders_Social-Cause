@@ -102,28 +102,7 @@ def check_image_for_ai(image_path):
             label = top_result['label'].upper()
             confidence = round(top_result['score'] * 100, 2)
 
-            # if "FAKE" in label or "AI" in label or "ARTIFICIAL" in label or "DEEPFAKE" in label:
-                
-            #     if confidence > 75: 
-            #         # Blatant, high-quality deepfakes
-            #         return ("FAKE", f"🔴 *HIGH RISK*: This media is {confidence}% likely to be AI-Generated.")
-                    
-            #     elif confidence >= 45:
-            #         # 🚨 THE COMPRESSION FIX: Catches WhatsApp/compressed videos!
-            #         return ("FAKE", f"🔴 *HIGH RISK*: We detected {confidence}% AI artifacts. While this score seems low, our compression heuristics indicate this is a definitive deepfake hidden by heavy media compression.")
-                    
-            #     elif confidence > 30:
-            #         # The Smartphone HDR / Filter Safety Net
-            #         return ("INCONCLUSIVE", f"🟠 *SUSPICIOUS*: Mild AI traces ({confidence}%) detected. This could be a heavily compressed deepfake, or just smartphone beauty filters.")
-                    
-            #     else:
-            #         return ("REAL", f"🟢 *VERIFIED SAFE*: This media appears real (Low AI traces).")
-                    
-            # else:
-            #     if confidence > 50:
-            #         return ("REAL", f"🟢 *VERIFIED SAFE*: This media appears to be {confidence}% REAL.")
-            #     else:
-            #         return ("INCONCLUSIVE", f"⚠️ *INCONCLUSIVE*: Appears real ({confidence}%), but confidence is too low to guarantee.")
+
             
             if "FAKE" in label or "AI" in label or "ARTIFICIAL" in label or "DEEPFAKE" in label:
                 
@@ -352,60 +331,7 @@ def check_temporal_consistency(video_path):
         print(f"❌ Temporal Scan Error: {e}")
         return None
 
-# --- HELPER 2.5: VIDEO DEEPFAKE SCANNER ---
-# def check_video_for_ai(video_path):
-#     print(f"🎥 Extracting frames from video: {video_path}")
-    
-#     # Open the video using OpenCV
-#     vidcap = cv2.VideoCapture(video_path)
-#     total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
-    
-#     if total_frames == 0:
-#         return ("ERROR", "Could not read the video file.")
 
-#     # Calculate exactly which 3 frames to pull (Start, Middle, End)
-#     frame_indices = [
-#         int(total_frames * 0.1),  # 10% in
-#         int(total_frames * 0.5),  # 50% in
-#         int(total_frames * 0.9)   # 90% in
-#     ]
-    
-#     highest_fake_confidence = 0
-    
-#     for idx in frame_indices:
-#         vidcap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-#         success, image = vidcap.read()
-        
-#         if success:
-#             # Save the frame temporarily
-#             temp_frame_path = f"temp_frame_{idx}.jpg"
-#             cv2.imwrite(temp_frame_path, image)
-            
-#             # Send this single frame to our Hugging Face Image detector
-#             print(f"🔍 Analyzing Frame {idx}...")
-#             category, verdict_msg = check_image_for_ai(temp_frame_path)
-            
-#             # Clean up the temp frame
-#             try: os.remove(temp_frame_path)
-#             except: pass
-            
-#             # If ANY frame is definitely fake, the whole video is fake!
-#             if category == "FAKE":
-#                 # Extract the number from the message to find the highest confidence
-#                 try:
-#                     conf = float(''.join(filter(str.isdigit, verdict_msg))) / 100
-#                     if conf > highest_fake_confidence:
-#                         highest_fake_confidence = conf
-#                 except:
-#                     pass
-                    
-#     vidcap.release()
-    
-#     # Return the final Verdict
-#     if highest_fake_confidence > 0:
-#         return ("FAKE", f"🔴 *HIGH RISK*: Video analysis complete. We detected manipulated AI frames with {highest_fake_confidence}% certainty.")
-#     else:
-#         return ("REAL", "🟢 *VERIFIED SAFE*: Video analysis complete. No AI manipulation detected in the keyframes.")
 # --- HELPER 5: ENCODE IMAGE FOR GROQ ---
 def encode_image_to_base64(image_path):
     with open(image_path, "rb") as image_file:
@@ -531,45 +457,6 @@ def check_id_forgery(image_path):
     except Exception as e:
         return ("ERROR", "Failed to scan ID card.")
 
-
-# # --- HELPER 8: ELA HEATMAP GENERATOR (THE WOW FACTOR) ---
-# def generate_ela_heatmap(image_path):
-#     print("🔥 Generating Digital Forensics Heatmap (ELA)...")
-#     try:
-#         original = cv2.imread(image_path)
-#         if original is None: 
-#             return None
-            
-#         # 1. Save at 90% quality to force compression artifacts
-#         temp_compressed = "temp_compressed.jpg"
-#         cv2.imwrite(temp_compressed, original, [cv2.IMWRITE_JPEG_QUALITY, 90])
-#         compressed = cv2.imread(temp_compressed)
-        
-#         # 2. Calculate the absolute pixel difference
-#         diff = cv2.absdiff(original, compressed)
-        
-#         # 3. Convert to Grayscale and heavily enhance the contrast
-#         gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-#         enhanced_diff = cv2.convertScaleAbs(gray_diff, alpha=15.0, beta=0)
-        
-#         # 4. Apply the "JET" Colormap to make it look like a thermal camera!
-#         heatmap = cv2.applyColorMap(enhanced_diff, cv2.COLORMAP_JET)
-        
-#         heatmap_path = f"heatmap_{os.path.basename(image_path)}"
-#         cv2.imwrite(heatmap_path, heatmap)
-        
-#         # Clean up and encode for the frontend
-#         try: os.remove(temp_compressed)
-#         except: pass
-
-#         heatmap_base64 = encode_image_to_base64(heatmap_path)
-#         try: os.remove(heatmap_path)
-#         except: pass
-        
-#         return f"data:image/jpeg;base64,{heatmap_base64}"
-#     except Exception as e:
-#         print(f"❌ Heatmap Error: {e}")
-#         return None
 
 # --- HELPER 9: VOICE TO TEXT (WHISPER AI) ---
 def transcribe_audio(audio_path):
@@ -752,144 +639,7 @@ def generate_formal_report_content(user_query, raw_verdict):
         print(f"❌ AI Report Generation Error: {e}")
         return None
 
-# --- MAIN ENDPOINT (SMART ROUTER) ---
-# 📱 1. WHATSAPP ENDPOINT 
-# =====================================================================
-# @app.post("/whatsapp")
-# def handle_whatsapp(
-#     request: Request,
-#     Body: str = Form(None), 
-#     MediaUrl0: str = Form(None), 
-#     MediaContentType0: str = Form(None), 
-#     From: str = Form(...)
-# ):
-#     response = MessagingResponse()
-#     user_id = From
-#     caption = Body.strip() if Body else ""
-    
-#     user_state_data = user_states.get(user_id)
-#     if isinstance(user_state_data, dict) and user_state_data.get("state") == "waiting_for_awareness_confirmation":
-#         if caption.upper() == "AWARENESS":
-#             topic = user_state_data.get("topic", "this viral fake content")
-#             awareness_msg = generate_awareness_message(topic)
-#             response.message(f"Forward this to your groups:\n\n{awareness_msg}")
-            
-#         elif caption.upper() == "REPORT":
-#             topic = user_state_data.get("topic", "Verification Request")
-#             verdict_text = user_state_data.get("verdict", "No details.")
-            
-#             pdf_filename = generate_official_report("Media/Claim", topic, verdict_text)
-#             if pdf_filename:
-#                 pdf_link = f"{request.base_url}reports/{pdf_filename}"
-#                 response.message(f"📄 *Here is your Official Verification Report (Summary):*\n{pdf_link}\n\n🚨 *For official reporting, please visit:* https://kavachverify.app/report")
-#             else:
-#                 response.message("Sorry, the report generator is currently busy.")
-                
-#         elif caption.upper() != "NO":
-#              response.message("Okay, cancelled. Send me anything else to verify!")
-             
-#         if user_id in user_states:
-#             del user_states[user_id]
-#         return Response(content=str(response), media_type="application/xml")
-
-#     final_verdict = ""
-#     category = "REAL"
-#     memory_topic = "An AI-generated fake image"
-
-#     if MediaUrl0:
-#         print(f"🛡️ Visual/Audio Path Triggered from {user_id}...")
-#         saved_file = download_twilio_media(MediaUrl0, TWILIO_SID, TWILIO_AUTH_TOKEN, MediaContentType0)
-        
-#         if saved_file:
-#             if saved_file.endswith((".ogg", ".mp3", ".wav")):
-#                 print("🛣️ Intent: WhatsApp Voice Note")
-#                 transcribed = transcribe_audio(saved_file)
-#                 if transcribed:
-#                     fact_msg = verify_news_claim(transcribed)
-#                     final_verdict += f"🗣️ *Voice Transcribed:* '{transcribed}'\n\n📰 *Fact-Check:*\n{fact_msg}\n\n"
-#                     category = "FAKE" if "FALSE" in fact_msg.upper() or "MISLEADING" in fact_msg.upper() else "REAL"
-#                     memory_topic = transcribed
-#                 else:
-#                     final_verdict += "Could not understand the audio.\n\n"
-#                     category = "ERROR"
-            
-#             elif saved_file.endswith(".mp4"):
-#                 print("🛣️ Intent: Video Deepfake Check")
-#                 category, msg = check_video_for_ai(saved_file)
-#                 final_verdict += f"🎥 *Video Forensics:*\n{msg}\n\n"
-                
-#             else:
-#                 caption_lower = caption.lower()
-
-
-                
-#                 # 🚨 THE SMART AUTO-ROUTER (Properly Indented!)
-#                 # 🚨 THE SMART AUTO-ROUTER (Perfectly Indented!)
-#                 if any(k in caption_lower for k in ["verify", "check", "true", "fake", "real", "claim", "fact", "ocr", "read"]):
-#                     print("🛣️ Intent: Verify Request. Running Smart OCR Scan...")
-#                     extracted_text = extract_text_from_image(saved_file)
-                    
-#                     if extracted_text:
-#                         text_clean = extracted_text.upper().replace(" ", "")
-#                         extracted_lower = extracted_text.lower()
-                        
-#                         # 1. AUTO-DETECT ID CARDS (Regex OR Caption OR OCR Text!)
-#                         is_id_card = (
-#                             re.search(r'[A-Z]{5}[0-9]{4}[A-Z]', text_clean) or 
-#                             re.search(r'(?<![A-Z0-9X*])([0-9X*]{4})[\s-]?([0-9X*]{4})[\s-]?([0-9X*]{2,4})(?![A-Z0-9X*])', extracted_text.upper()) or 
-#                             any(k in caption_lower for k in ["id", "aadhar", "pan", "passport", "card"]) or
-#                             any(k in extracted_lower for k in ["aadhaar", "aadhar", "income tax department", "government of india", "dob:", "permanent account number"])
-#                         )
-                        
-#                         if is_id_card:
-#                             print("🛣️ Smart Route: ID Card Detected by OCR/Regex!")
-#                             category, msg = check_id_forgery(saved_file)
-#                             final_verdict += f"{msg}\n\n"
-#                         else:
-#                             print("🛣️ Smart Route: Text Fact-Check Detected!")
-#                             fact_check = verify_news_claim(extracted_text)
-#                             final_verdict += f"📰 *Contextual Fact-Check:*\n{fact_check}\n\n"
-#                             category = "FAKE" if "FALSE" in fact_check.upper() or "MISLEADING" in fact_check.upper() else "REAL"
-#                             memory_topic = extracted_text
-#                     else:
-#                         print(f"🛣️ Smart Route: Contextual Vision Bridge - '{caption}'")
-#                         context_msg = evaluate_image_with_context(saved_file, caption)
-#                         final_verdict += f"👁️ *Contextual Report:*\n{context_msg}\n\n"
-#                         category = "FAKE" if "FALSE" in context_msg.upper() or "FAKE" in context_msg.upper() or "MISLEADING" in context_msg.upper() else "REAL"
-#                         memory_topic = caption
-                        
-#                 else:
-#                     print("🛣️ Intent: Deepfake Check (Default)")
-#                     category, msg = check_image_for_ai(saved_file)
-#                     final_verdict += f"🖼️ *Image Forensics:*\n{msg}\n\n"
-                    
-#             try: os.remove(saved_file)
-#             except: pass
-#         else:
-#             final_verdict += "Error downloading media from WhatsApp. ⚠️\n\n"
-
-#     elif caption:
-#         print(f"🛣️ Intent: Pure Text Claim - '{caption}'")
-#         text_verdict = verify_news_claim(caption)
-#         final_verdict += f"📝 *Claim Fact-Check:*\n{text_verdict}"
-#         if "FALSE" in text_verdict.upper() or "MISLEADING" in text_verdict.upper():
-#             category = "FAKE"
-#             memory_topic = caption
-
-#     if not final_verdict:
-#         final_verdict = "Please send a news claim, voice note, image, or video for verification."
-
-#     final_reply = f"🛡️ *KavachVerify Report:*\n{final_verdict.strip()}"
-#     if category == "FAKE" or category == "INCONCLUSIVE":
-#         final_reply += "\n\nOptions:\nReply *'REPORT'* to download an official PDF report for authorities.\nReply *'AWARENESS'* to get a shareable warning message."
-#         user_states[user_id] = {
-#             "state": "waiting_for_action", 
-#             "topic": memory_topic,
-#             "verdict": final_verdict.strip()
-#         }
-        
-#     response.message(final_reply)
-#     return Response(content=str(response), media_type="application/xml")
+#
 
 # =====================================================================
 # 📱 1. WHATSAPP ENDPOINT 
