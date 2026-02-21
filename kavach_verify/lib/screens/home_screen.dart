@@ -14,15 +14,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 6),
             child: Text(
               'Quick Access',
               style: TextStyle(
@@ -46,12 +44,12 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: GridView.count(
-              crossAxisCount: isLandscape ? 4 : 2,
+              crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: isLandscape ? 2.3 : 1.55,
+              childAspectRatio: 1.55,
               children: [
                 _QuickAccessCard(
                   icon: Icons.photo_library_rounded,
@@ -126,28 +124,14 @@ class HomeScreen extends StatelessWidget {
             ),
           ).animate().fadeIn(delay: 350.ms, duration: 350.ms),
           const SizedBox(height: 6),
-          isLandscape
-              ? GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 3.8,
-                  ),
-                  itemCount: mockDetections.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemBuilder: (context, i) =>
-                      _DetectionFeedCard(item: mockDetections[i], index: i),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: mockDetections.length,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemBuilder: (context, i) =>
-                      _DetectionFeedCard(item: mockDetections[i], index: i),
-                ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: mockDetections.length,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            itemBuilder: (context, i) =>
+                _DetectionFeedCard(item: mockDetections[i], index: i),
+          ),
           const SizedBox(height: 20),
         ],
       ),

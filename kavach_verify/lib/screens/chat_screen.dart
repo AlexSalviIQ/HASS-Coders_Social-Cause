@@ -10,6 +10,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:video_player/video_player.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
@@ -40,6 +41,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   bool _isRecording = false;
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
+  final List<Map<String, String>> _pendingAttachments = [];
 
   @override
   void initState() {
@@ -51,7 +53,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (widget.initialAttachmentPath != null &&
         widget.initialAttachmentType != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _addAttachment(
+        _stageAttachment(
           widget.initialAttachmentPath!,
           widget.initialAttachmentType!,
           widget.initialAttachmentName ?? 'file',
@@ -82,22 +84,77 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
   }
 
-  void _addAttachment(String path, String type, String name) {
+  void _stageAttachment(String path, String type, String name) {
     setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: name,
-          isUser: true,
-          timestamp: DateTime.now(),
-          attachmentPath: path,
-          attachmentType: type,
-        ),
-      );
+      _pendingAttachments.add({'path': path, 'type': type, 'name': name});
+    });
+  }
+
+  void _removeAttachment(int index) {
+    setState(() {
+      _pendingAttachments.removeAt(index);
+    });
+  }
+
+  void _sendPendingAttachments() {
+    if (_pendingAttachments.isEmpty && _textController.text.trim().isEmpty)
+      return;
+    final attachments = List<Map<String, String>>.from(_pendingAttachments);
+    final text = _textController.text.trim();
+    setState(() {
+      // Send each attachment as a message
+      for (final att in attachments) {
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: att['name'] ?? 'file',
+            isUser: true,
+            timestamp: DateTime.now(),
+            attachmentPath: att['path'],
+            attachmentType: att['type'],
+          ),
+        );
+      }
+      // Send text message if any
+      if (text.isNotEmpty) {
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: text,
+            isUser: true,
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
+      _pendingAttachments.clear();
+      _textController.clear();
+      _hasText = false;
       _isTyping = true;
     });
     _scrollToBottom();
-    _simulateAIResponse(type, name);
+    // AI response: respond to the last attachment or to text
+    if (attachments.isNotEmpty) {
+      _simulateAIResponse(
+        attachments.last['type'] ?? '',
+        attachments.last['name'] ?? '',
+      );
+    } else if (text.isNotEmpty) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        setState(() {
+          _isTyping = false;
+          _messages.add(
+            ChatMessage(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              text: _getAIResponse(text),
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+        });
+        _scrollToBottom();
+      });
+    }
   }
 
   void _simulateAIResponse(String type, String name) {
@@ -146,36 +203,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: text.trim(),
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
-      );
-      _textController.clear();
-      _hasText = false;
-      _isTyping = true;
-    });
-    _scrollToBottom();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() {
-        _isTyping = false;
-        _messages.add(
-          ChatMessage(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            text: _getAIResponse(text),
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
-      _scrollToBottom();
-    });
+    // Use the unified send that handles both attachments and text
+    _sendPendingAttachments();
   }
 
   String _getAIResponse(String text) {
@@ -242,7 +271,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         requestFullMetadata: false,
                       );
                       if (f != null) {
-                        _addAttachment(f.path, 'image', f.name);
+                        _stageAttachment(f.path, 'image', f.name);
                       }
                     } catch (e) {
                       _snack('Camera unavailable');
@@ -261,7 +290,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         requestFullMetadata: false,
                       );
                       if (f != null) {
-                        _addAttachment(f.path, 'image', f.name);
+                        _stageAttachment(f.path, 'image', f.name);
                       }
                     } catch (e) {
                       _snack('Cannot access gallery');
@@ -279,7 +308,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         source: ImageSource.gallery,
                       );
                       if (f != null) {
-                        _addAttachment(f.path, 'video', f.name);
+                        _stageAttachment(f.path, 'video', f.name);
                       }
                     } catch (e) {
                       _snack('Cannot pick video');
@@ -301,7 +330,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'png', 'jpg'],
       );
       if (result != null && result.files.isNotEmpty) {
-        _addAttachment(
+        _stageAttachment(
           result.files.single.path ?? '',
           'document',
           result.files.single.name,
@@ -322,7 +351,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           setState(() {
             _isRecording = false;
           });
-          _addAttachment(
+          _stageAttachment(
             path,
             'voice',
             'Voice Message (${_recordingSeconds}s)',
@@ -454,7 +483,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 requestFullMetadata: false,
                               );
                               if (f != null) {
-                                _addAttachment(f.path, 'govid', f.name);
+                                _stageAttachment(f.path, 'govid', f.name);
                               }
                             } catch (_) {
                               _snack('Cannot pick file');
@@ -531,6 +560,228 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
+        // Staged attachments preview strip (ChatGPT/Gemini style)
+        if (_pendingAttachments.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.white,
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightGrey,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(_pendingAttachments.length, (i) {
+                  final att = _pendingAttachments[i];
+                  final type = att['type'] ?? '';
+                  final name = att['name'] ?? 'file';
+                  final path = att['path'] ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Preview content
+                        if (type == 'image' || type == 'govid')
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightGrey,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: kIsWeb
+                                  ? Icon(
+                                      Icons.image_rounded,
+                                      color: AppColors.mediumGrey,
+                                      size: 28,
+                                    )
+                                  : Image.file(
+                                      File(path),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Icon(
+                                        Icons.image_rounded,
+                                        color: AppColors.mediumGrey,
+                                        size: 28,
+                                      ),
+                                    ),
+                            ),
+                          )
+                        else if (type == 'video')
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                              ),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.videocam_rounded,
+                                color: Colors.white70,
+                                size: 26,
+                              ),
+                            ),
+                          )
+                        else if (type == 'voice')
+                          Container(
+                            height: 64,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightGrey,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.mic_rounded,
+                                  color: AppColors.danger,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 100,
+                                  ),
+                                  child: Text(
+                                    name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark
+                                          ? AppColors.white
+                                          : AppColors.charcoal,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          // Document chip
+                          Container(
+                            height: 64,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightGrey,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  name.toLowerCase().endsWith('.pdf')
+                                      ? Icons.picture_as_pdf_rounded
+                                      : Icons.description_rounded,
+                                  color: name.toLowerCase().endsWith('.pdf')
+                                      ? AppColors.danger
+                                      : const Color(0xFF8B5CF6),
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 100,
+                                  ),
+                                  child: Text(
+                                    name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? AppColors.white
+                                          : AppColors.charcoal,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // Remove button
+                        Positioned(
+                          top: -6,
+                          right: -6,
+                          child: GestureDetector(
+                            onTap: () => _removeAttachment(i),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.charcoal
+                                    : Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 13,
+                                color: isDark
+                                    ? AppColors.white
+                                    : AppColors.charcoal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
         // Input bar
         Container(
           padding: EdgeInsets.fromLTRB(
@@ -543,13 +794,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : AppColors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
+            boxShadow: _pendingAttachments.isEmpty
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ]
+                : [],
           ),
           child: Row(
             children: [
@@ -622,7 +875,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   scale: anim,
                   child: FadeTransition(opacity: anim, child: child),
                 ),
-                child: _hasText
+                child: (_hasText || _pendingAttachments.isNotEmpty)
                     ? Material(
                         key: const ValueKey('send'),
                         color: Colors.transparent,
@@ -863,9 +1116,20 @@ class _ChatBubbleState extends State<_ChatBubble> {
                       child: _buildImagePreview(message.attachmentPath!),
                     ),
                   ),
-                // VIDEO preview
+                // VIDEO preview — tappable like images
                 if (hasAttachment && isUser && isVideo)
-                  _buildVideoPreview(isDark),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => _FullScreenVideoViewer(
+                            path: message.attachmentPath!,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildVideoPreview(isDark),
+                  ),
                 // DOC preview — WhatsApp style
                 if (hasAttachment && isUser && isDoc)
                   GestureDetector(
@@ -1437,6 +1701,120 @@ class _FullScreenImageViewer extends StatelessWidget {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+}
+
+// Fullscreen video viewer
+class _FullScreenVideoViewer extends StatefulWidget {
+  final String path;
+  const _FullScreenVideoViewer({required this.path});
+  @override
+  State<_FullScreenVideoViewer> createState() => _FullScreenVideoViewerState();
+}
+
+class _FullScreenVideoViewerState extends State<_FullScreenVideoViewer> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      if (kIsWeb) {
+        setState(() => _error = 'Video playback not supported on web preview');
+        return;
+      }
+      _controller = VideoPlayerController.file(File(widget.path));
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() => _initialized = true);
+        _controller!.play();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Cannot play video');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Video Preview', style: TextStyle(fontSize: 16)),
+      ),
+      body: Center(
+        child: _error != null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.videocam_off_rounded,
+                    color: AppColors.mediumGrey,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: AppColors.mediumGrey),
+                  ),
+                ],
+              )
+            : !_initialized
+            ? const CircularProgressIndicator(color: Colors.white)
+            : GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_controller!.value.isPlaying) {
+                      _controller!.pause();
+                    } else {
+                      _controller!.play();
+                    }
+                  });
+                },
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AspectRatio(
+                      aspectRatio: _controller!.value.aspectRatio,
+                      child: VideoPlayer(_controller!),
+                    ),
+                    if (!_controller!.value.isPlaying)
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }

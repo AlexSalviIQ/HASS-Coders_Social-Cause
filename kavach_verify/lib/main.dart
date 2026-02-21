@@ -59,7 +59,16 @@ class _KavachVerifyAppState extends State<KavachVerifyApp> {
       locale: DevicePreview.locale(context),
       builder: (context, child) {
         final deviceChild = DevicePreview.appBuilder(context, child);
-        return _SplashGate(child: deviceChild);
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          color: isDark ? const Color(0xFF0D1117) : const Color(0xFFE8EDF3),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: _SplashGate(child: deviceChild),
+            ),
+          ),
+        );
       },
     );
   }

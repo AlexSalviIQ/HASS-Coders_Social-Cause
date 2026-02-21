@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -9,32 +13,205 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _urlController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _platformController = TextEditingController();
-  String _contentType = 'Text';
-  String _severity = 'Medium';
-  bool _isSubmitting = false;
+  final TextEditingController _descController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  final _contentTypes = [
-    'Text',
-    'Image',
-    'Video',
-    'Audio',
-    'Document',
-    'Website/Link',
-  ];
-  final _severityLevels = ['Low', 'Medium', 'High', 'Critical'];
+  // Documentation uploads (proof documents)
+  final List<Map<String, String>> _documentation = [];
+  // Proof uploads (images, videos, documents as evidence)
+  final List<Map<String, String>> _proof = [];
+
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _urlController.dispose();
-    _descriptionController.dispose();
-    _platformController.dispose();
+    _descController.dispose();
     super.dispose();
+  }
+
+  void _pickDocumentation() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _documentation.add({
+            'path': result.files.single.path ?? '',
+            'name': result.files.single.name,
+            'type': 'document',
+          });
+        });
+      }
+    } catch (_) {
+      _snack('Cannot pick document');
+    }
+  }
+
+  void _pickProof() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Add Proof',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.charcoal,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ProofOption(
+                  icon: Icons.photo_library_rounded,
+                  label: 'Image',
+                  color: AppColors.deepBlue,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final f = await _imagePicker.pickImage(
+                        source: ImageSource.gallery,
+                        requestFullMetadata: false,
+                      );
+                      if (f != null) {
+                        setState(() {
+                          _proof.add({
+                            'path': f.path,
+                            'name': f.name,
+                            'type': 'image',
+                          });
+                        });
+                      }
+                    } catch (_) {
+                      _snack('Cannot pick image');
+                    }
+                  },
+                ),
+                _ProofOption(
+                  icon: Icons.videocam_rounded,
+                  label: 'Video',
+                  color: AppColors.danger,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final f = await _imagePicker.pickVideo(
+                        source: ImageSource.gallery,
+                      );
+                      if (f != null) {
+                        setState(() {
+                          _proof.add({
+                            'path': f.path,
+                            'name': f.name,
+                            'type': 'video',
+                          });
+                        });
+                      }
+                    } catch (_) {
+                      _snack('Cannot pick video');
+                    }
+                  },
+                ),
+                _ProofOption(
+                  icon: Icons.description_rounded,
+                  label: 'Document',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: [
+                          'pdf',
+                          'doc',
+                          'docx',
+                          'txt',
+                          'png',
+                          'jpg',
+                        ],
+                      );
+                      if (result != null && result.files.isNotEmpty) {
+                        setState(() {
+                          _proof.add({
+                            'path': result.files.single.path ?? '',
+                            'name': result.files.single.name,
+                            'type': 'document',
+                          });
+                        });
+                      }
+                    } catch (_) {
+                      _snack('Cannot pick document');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 180.ms),
+    );
+  }
+
+  void _removeDoc(int index) {
+    setState(() => _documentation.removeAt(index));
+  }
+
+  void _removeProof(int index) {
+    setState(() => _proof.removeAt(index));
+  }
+
+  void _submit() {
+    if (_descController.text.trim().isEmpty &&
+        _documentation.isEmpty &&
+        _proof.isEmpty) {
+      _snack('Please add a description or upload proof');
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    // Simulate submission
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _snack('Report submitted successfully! 🛡️');
+      _descController.clear();
+      setState(() {
+        _documentation.clear();
+        _proof.clear();
+      });
+    });
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   @override
@@ -42,416 +219,464 @@ class _ReportScreenState extends State<ReportScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF1744), Color(0xFFFF5252)],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF1744).withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.flag_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Report Fake Content',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.white : AppColors.charcoal,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Submit to Cyber Security team',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? AppColors.mediumGrey
-                              : AppColors.darkGrey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ).animate().fadeIn(duration: 350.ms),
-            const SizedBox(height: 24),
-
-            // Content Title
-            _buildLabel('Title / Subject', isDark),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _titleController,
-              hint: 'e.g. Fake news about government policy',
-              isDark: isDark,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Title is required' : null,
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Text(
+            'Report Fake Content',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.white : AppColors.charcoal,
             ),
-            const SizedBox(height: 18),
-
-            // Content Type
-            _buildLabel('Content Type', isDark),
-            const SizedBox(height: 6),
-            _buildDropdown(
-              value: _contentType,
-              items: _contentTypes,
-              isDark: isDark,
-              onChanged: (v) => setState(() => _contentType = v!),
+          ).animate().fadeIn(duration: 300.ms),
+          const SizedBox(height: 4),
+          Text(
+            'Help us fight misinformation by reporting suspicious content',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
             ),
-            const SizedBox(height: 18),
+          ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
+          const SizedBox(height: 24),
 
-            // URL / Source
-            _buildLabel('URL / Source Link', isDark),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _urlController,
-              hint: 'https://example.com/fake-article',
-              isDark: isDark,
-              keyboardType: TextInputType.url,
-            ),
-            const SizedBox(height: 18),
-
-            // Platform
-            _buildLabel('Platform / Source', isDark),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _platformController,
-              hint: 'e.g. WhatsApp, Facebook, Twitter, News site',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 18),
-
-            // Severity
-            _buildLabel('Severity', isDark),
-            const SizedBox(height: 8),
-            Row(
-              children: _severityLevels.map((level) {
-                final isSelected = _severity == level;
-                final color = _severityColor(level);
-                return Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      right: level != 'Critical' ? 8 : 0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _severity = level),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? color.withValues(alpha: 0.15)
-                              : (isDark
-                                    ? AppColors.darkCard
-                                    : AppColors.offWhite),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected
-                                ? color
-                                : (isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightGrey),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            level,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? color
-                                  : (isDark
-                                        ? AppColors.mediumGrey
-                                        : AppColors.darkGrey),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-
-            // Description
-            _buildLabel('Description', isDark),
-            const SizedBox(height: 6),
-            _buildTextField(
-              controller: _descriptionController,
-              hint:
-                  'Describe the fake content in detail — what is false, why it is harmful, any evidence...',
-              isDark: isDark,
-              maxLines: 5,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Please describe the content'
-                  : null,
-            ),
-            const SizedBox(height: 28),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitReport,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.send_rounded, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Submit Report',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ).animate().fadeIn(delay: 300.ms, duration: 350.ms),
-            const SizedBox(height: 16),
-
-            // Info note
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
+          // Description field
+          _sectionLabel('Description', isDark),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.darkCard
+                  : AppColors.lightGrey.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
                 color: isDark
-                    ? AppColors.deepBlue.withValues(alpha: 0.1)
-                    : AppColors.deepBlue.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.deepBlue.withValues(alpha: 0.15),
-                ),
+                    ? AppColors.darkBorder
+                    : AppColors.mediumGrey.withValues(alpha: 0.2),
               ),
+            ),
+            child: TextField(
+              controller: _descController,
+              maxLines: 4,
+              minLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Describe the fake content you want to report...',
+                hintStyle: TextStyle(color: AppColors.mediumGrey, fontSize: 13),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(14),
+              ),
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.white : AppColors.charcoal,
+              ),
+            ),
+          ).animate().fadeIn(delay: 120.ms, duration: 300.ms),
+          const SizedBox(height: 24),
+
+          // Documentation section
+          _sectionLabel('Documentation', isDark),
+          const SizedBox(height: 4),
+          Text(
+            'Upload supporting documents (PDFs, Word docs, etc.)',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Uploaded docs
+          if (_documentation.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(_documentation.length, (i) {
+                final doc = _documentation[i];
+                return _FileChip(
+                  name: doc['name'] ?? 'file',
+                  type: 'document',
+                  isDark: isDark,
+                  onRemove: () => _removeDoc(i),
+                );
+              }),
+            ),
+          if (_documentation.isNotEmpty) const SizedBox(height: 10),
+          _UploadButton(
+            label: 'Upload Document',
+            icon: Icons.upload_file_rounded,
+            color: const Color(0xFF8B5CF6),
+            isDark: isDark,
+            onTap: _pickDocumentation,
+          ).animate().fadeIn(delay: 160.ms, duration: 300.ms),
+          const SizedBox(height: 24),
+
+          // Proof section
+          _sectionLabel('Proof', isDark),
+          const SizedBox(height: 4),
+          Text(
+            'Upload images, videos, or documents as evidence',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Uploaded proof previews
+          if (_proof.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: AppColors.deepBlueLight,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Your report will be reviewed by the Cyber Security team. You may be contacted for additional evidence.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppColors.mediumGrey
-                            : AppColors.darkGrey,
-                        height: 1.4,
-                      ),
+                children: List.generate(_proof.length, (i) {
+                  final item = _proof[i];
+                  final type = item['type'] ?? '';
+                  final name = item['name'] ?? 'file';
+                  final path = item['path'] ?? '';
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        if (type == 'image')
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightGrey,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: kIsWeb
+                                  ? const Icon(
+                                      Icons.image_rounded,
+                                      color: AppColors.mediumGrey,
+                                      size: 30,
+                                    )
+                                  : Image.file(
+                                      File(path),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.image_rounded,
+                                        color: AppColors.mediumGrey,
+                                        size: 30,
+                                      ),
+                                    ),
+                            ),
+                          )
+                        else if (type == 'video')
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                              ),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.mediumGrey.withValues(
+                                        alpha: 0.3,
+                                      ),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.videocam_rounded,
+                                color: Colors.white70,
+                                size: 28,
+                              ),
+                            ),
+                          )
+                        else
+                          _FileChip(
+                            name: name,
+                            type: 'document',
+                            isDark: isDark,
+                            onRemove: () => _removeProof(i),
+                            showRemove: false,
+                          ),
+                        // Remove button
+                        Positioned(
+                          top: -6,
+                          right: -6,
+                          child: GestureDetector(
+                            onTap: () => _removeProof(i),
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.charcoal
+                                    : Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 14,
+                                color: isDark
+                                    ? AppColors.white
+                                    : AppColors.charcoal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  );
+                }),
               ),
-            ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
-          ],
-        ),
+            ),
+          if (_proof.isNotEmpty) const SizedBox(height: 10),
+          _UploadButton(
+            label: 'Add Proof',
+            icon: Icons.add_photo_alternate_rounded,
+            color: AppColors.deepBlue,
+            isDark: isDark,
+            onTap: _pickProof,
+          ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
+          const SizedBox(height: 32),
+
+          // Submit button
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.deepBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.send_rounded, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'Submit Report',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ).animate().fadeIn(delay: 240.ms, duration: 300.ms),
+        ],
       ),
     );
   }
 
-  Widget _buildLabel(String text, bool isDark) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: isDark ? AppColors.white : AppColors.charcoal,
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required bool isDark,
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(
-        fontSize: 14,
-        color: isDark ? AppColors.white : AppColors.charcoal,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
-          fontSize: 13,
-          color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
-        ),
-        filled: true,
-        fillColor: isDark ? AppColors.darkCard : AppColors.offWhite,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.darkBorder : AppColors.lightGrey,
+  Widget _sectionLabel(String label, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 16,
+          decoration: BoxDecoration(
+            color: AppColors.deepBlue,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.darkBorder : AppColors.lightGrey,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.deepBlueLight),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.danger),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String value,
-    required List<String> items,
-    required bool isDark,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.offWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightGrey,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          dropdownColor: isDark ? AppColors.darkCard : AppColors.white,
+        const SizedBox(width: 8),
+        Text(
+          label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
             color: isDark ? AppColors.white : AppColors.charcoal,
           ),
-          items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
-          onChanged: onChanged,
         ),
-      ),
+      ],
     );
   }
+}
 
-  Color _severityColor(String level) {
-    switch (level) {
-      case 'Low':
-        return const Color(0xFF4CAF50);
-      case 'Medium':
-        return const Color(0xFFF59E0B);
-      case 'High':
-        return const Color(0xFFFF5722);
-      case 'Critical':
-        return const Color(0xFFFF1744);
-      default:
-        return AppColors.mediumGrey;
-    }
-  }
+// Reusable upload button
+class _UploadButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool isDark;
+  final VoidCallback onTap;
+  const _UploadButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.isDark,
+    required this.onTap,
+  });
 
-  Future<void> _submitReport() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSubmitting = true);
-
-    // Simulate submission delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-
-    // Clear form
-    _titleController.clear();
-    _urlController.clear();
-    _descriptionController.clear();
-    _platformController.clear();
-    setState(() {
-      _contentType = 'Text';
-      _severity = 'Medium';
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
+          color: color.withValues(alpha: isDark ? 0.08 : 0.04),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Report submitted successfully! The Cyber Security team will review it.',
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+}
+
+// File chip widget
+class _FileChip extends StatelessWidget {
+  final String name;
+  final String type;
+  final bool isDark;
+  final VoidCallback? onRemove;
+  final bool showRemove;
+  const _FileChip({
+    required this.name,
+    required this.type,
+    required this.isDark,
+    this.onRemove,
+    this.showRemove = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPdf = name.toLowerCase().endsWith('.pdf');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: isDark ? AppColors.darkCard : AppColors.lightGrey,
+        border: Border.all(
+          color: isDark
+              ? AppColors.darkBorder
+              : AppColors.mediumGrey.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPdf ? Icons.picture_as_pdf_rounded : Icons.description_rounded,
+            color: isPdf ? AppColors.danger : const Color(0xFF8B5CF6),
+            size: 18,
+          ),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.white : AppColors.charcoal,
+              ),
+            ),
+          ),
+          if (showRemove && onRemove != null) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onRemove,
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: AppColors.mediumGrey,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Proof option button
+class _ProofOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ProofOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.white
+                  : AppColors.darkGrey,
+            ),
+          ),
+        ],
       ),
     );
   }

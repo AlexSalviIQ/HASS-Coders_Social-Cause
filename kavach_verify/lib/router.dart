@@ -10,6 +10,7 @@ import 'screens/library_detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/report_screen.dart';
+import 'screens/whatsapp_bot_screen.dart';
 import 'widgets/shell_scaffold.dart';
 
 GoRouter createRouter(AuthProvider auth) {
@@ -85,6 +86,13 @@ GoRouter createRouter(AuthProvider auth) {
                 ),
               ),
             ],
+          ),
+          GoRoute(
+            path: '/whatsapp',
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const WhatsAppBotScreen(),
+            ),
           ),
           GoRoute(
             path: '/community',

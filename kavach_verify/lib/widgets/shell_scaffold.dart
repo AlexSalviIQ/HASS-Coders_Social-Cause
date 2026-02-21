@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 
 class ShellScaffold extends StatefulWidget {
@@ -44,6 +43,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
         return 'Chat';
       case '/library':
         return 'Library';
+      case '/whatsapp':
+        return 'WhatsApp Bot';
       case '/profile':
         return 'Profile';
       case '/community':
@@ -57,19 +58,6 @@ class _ShellScaffoldState extends State<ShellScaffold> {
   }
 
   bool get _isHome => widget.currentPath == '/home';
-
-  Future<void> _openWhatsApp() async {
-    final uri = Uri.parse(
-      'https://wa.me/14155238886?text=join%20chemical-farther',
-    );
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      try {
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      } catch (_) {}
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,29 +204,21 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // WhatsApp / Chat icon
+                      // Chat icon
                       Material(
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(10),
-                          onTap: _openWhatsApp,
+                          onTap: () => context.go('/chat'),
                           child: Container(
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF25D366),
+                              color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF25D366,
-                                  ).withValues(alpha: 0.3),
-                                  blurRadius: 6,
-                                ),
-                              ],
                             ),
                             child: const Icon(
-                              Icons.chat,
+                              Icons.chat_bubble_rounded,
                               color: Colors.white,
                               size: 18,
                             ),
@@ -278,54 +258,37 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.emeraldGreen,
-                            AppColors.emeraldGreenLight,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.emeraldGreen.withValues(
-                              alpha: 0.3,
-                            ),
-                            blurRadius: 8,
+                    Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            'assets/images/kavach_logo.png',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            alignment: const Alignment(0, -0.15),
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.asset(
-                          'assets/images/kavach_logo.png',
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          alignment: const Alignment(0, -0.15),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'KavachVerify',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ).animate().fadeIn(duration: 300.ms),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'KavachVerify',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
                     Text(
                       'Truth Shield for the Digital Age',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 11,
                       ),
-                    ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
+                    ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
                   ],
                 ),
               ),
@@ -339,9 +302,9 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                       _navItem(context, Icons.home_rounded, 'Home', '/home', 0),
                       _navItem(
                         context,
-                        Icons.chat_bubble_rounded,
-                        'Chat',
-                        '/chat',
+                        Icons.smart_toy_rounded,
+                        'WhatsApp Bot',
+                        '/whatsapp',
                         40,
                       ),
                       _navItem(
