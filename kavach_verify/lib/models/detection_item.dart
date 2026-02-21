@@ -62,6 +62,7 @@ class ChatMessage {
   final DateTime timestamp;
   final String? attachmentPath;
   final String? attachmentType;
+  final String? reportPdfUrl;
 
   ChatMessage({
     required this.id,
@@ -70,6 +71,7 @@ class ChatMessage {
     required this.timestamp,
     this.attachmentPath,
     this.attachmentType,
+    this.reportPdfUrl,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {

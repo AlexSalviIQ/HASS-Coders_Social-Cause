@@ -12,6 +12,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import '../theme/app_theme.dart';
 import '../models/detection_item.dart';
 import '../services/api_service.dart';
@@ -192,14 +193,33 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       if (!mounted) return;
 
       String response;
+      String? reportUrl;
       if (result['status'] == 'success') {
         response = result['message'] ?? 'Analysis complete.';
 
+        // Rewrite report URL to use the app's baseUrl (emulator-safe)
+        final rawUrl = result['report_pdf_url'];
+        if (rawUrl != null && rawUrl.toString().isNotEmpty) {
+          final uri = Uri.tryParse(rawUrl.toString());
+          if (uri != null) {
+            reportUrl = '${ApiService.baseUrl}${uri.path}';
+          }
+        }
+
         // Save detection to backend
         final category = attachmentType ?? 'text';
-        final isFake =
-            (result['category'] ?? '').toString().toUpperCase() == 'FAKE';
+        final resultCategory = (result['category'] ?? '')
+            .toString()
+            .toUpperCase();
+        final isFake = resultCategory == 'FAKE';
+        final isInconclusive = resultCategory == 'INCONCLUSIVE';
         final confidence = isFake ? 0.9 : 0.1;
+
+        // Append report options if FAKE or INCONCLUSIVE
+        if ((isFake || isInconclusive) && reportUrl != null) {
+          response +=
+              '\n\n📄 An official verification report has been generated. Tap the button below to download it.';
+        }
 
         if (_userId.isNotEmpty) {
           ApiService.createDetection(
@@ -226,6 +246,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             text: response,
             isUser: false,
             timestamp: DateTime.now(),
+            reportPdfUrl: reportUrl,
           ),
         );
       });
@@ -1228,6 +1249,76 @@ class _ChatBubbleState extends State<_ChatBubble> {
                             color: textColor,
                             fontSize: 13,
                             height: 1.4,
+                          ),
+                        ),
+                      // Report Download Button
+                      if (!isUser && message.reportPdfUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        'Downloading report...',
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  final resp = await http.get(
+                                    Uri.parse(message.reportPdfUrl!),
+                                  );
+                                  if (resp.statusCode == 200) {
+                                    final dir = await getTemporaryDirectory();
+                                    final fileName = message.reportPdfUrl!
+                                        .split('/')
+                                        .last;
+                                    final pdfFile = File(
+                                      '${dir.path}/$fileName',
+                                    );
+                                    await pdfFile.writeAsBytes(resp.bodyBytes);
+                                    await OpenFilex.open(pdfFile.path);
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Download failed: $e'),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.picture_as_pdf_rounded,
+                                size: 16,
+                              ),
+                              label: const Text('Download Report'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isDark
+                                    ? const Color(0xFF1E3A5F)
+                                    : AppColors.deepBlue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       const SizedBox(height: 3),
