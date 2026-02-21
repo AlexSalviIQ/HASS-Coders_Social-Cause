@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/app_theme.dart';
 
 class ShellScaffold extends StatefulWidget {
@@ -45,8 +46,12 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     final uri = Uri.parse(
       'https://wa.me/14155238886?text=join%20chemical-farther',
     );
-    if (await canLaunchUrl(uri)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      } catch (_) {}
     }
   }
 
@@ -56,30 +61,37 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     return PopScope(
       canPop: _isHome,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) context.go('/home');
+        if (!didPop) {
+          context.go('/home');
+        }
       },
       child: Scaffold(
         key: _scaffoldKey,
         drawer: _buildDrawer(context, isDark),
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(56),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.deepBlue,
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [AppColors.darkSurface, AppColors.darkSurface]
+                    : [AppColors.deepBlueDark, AppColors.deepBlue],
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 6,
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: SafeArea(
+              bottom: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
-                    // Hamburger on LEFT
+                    // Hamburger LEFT
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -89,7 +101,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: Colors.white.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -116,6 +128,14 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.emeraldGreen.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 6,
+                                ),
+                              ],
                             ),
                             child: const Center(
                               child: Text(
@@ -141,7 +161,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                               Text(
                                 _currentPageName,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
+                                  color: Colors.white.withValues(alpha: 0.65),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w400,
                                 ),
@@ -151,7 +171,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                         ],
                       ),
                     ),
-                    // WhatsApp icon on RIGHT
+                    // WhatsApp icon RIGHT — official WhatsApp icon
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -161,15 +181,23 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF25D366,
-                            ).withValues(alpha: 0.2),
+                            color: const Color(0xFF25D366),
                             borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF25D366,
+                                ).withValues(alpha: 0.3),
+                                blurRadius: 6,
+                              ),
+                            ],
                           ),
-                          child: const Icon(
-                            Icons.chat_rounded,
-                            color: Color(0xFF25D366),
-                            size: 20,
+                          child: const Center(
+                            child: FaIcon(
+                              FontAwesomeIcons.whatsapp,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),
@@ -190,98 +218,129 @@ class _ShellScaffoldState extends State<ShellScaffold> {
       width: 275,
       child: Container(
         color: isDark ? AppColors.darkSurface : AppColors.white,
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.deepBlue, AppColors.deepBlueLight],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.deepBlueDark, AppColors.deepBlue],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.emeraldGreen,
-                              AppColors.emeraldGreenLight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.emeraldGreen,
+                                AppColors.emeraldGreenLight,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.emeraldGreen.withValues(
+                                  alpha: 0.3,
+                                ),
+                                blurRadius: 8,
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(14),
+                          child: const Center(
+                            child: Text('🛡️', style: TextStyle(fontSize: 22)),
+                          ),
+                        )
+                        .animate()
+                        .fadeIn(duration: 300.ms)
+                        .slideX(
+                          begin: -0.15,
+                          duration: 350.ms,
+                          curve: Curves.easeOutCubic,
                         ),
-                        child: const Center(
-                          child: Text('🛡️', style: TextStyle(fontSize: 24)),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(duration: 300.ms)
-                      .slideX(
-                        begin: -0.15,
-                        duration: 350.ms,
-                        curve: Curves.easeOutCubic,
+                    const SizedBox(height: 10),
+                    const Text(
+                      'KavachVerify',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'KavachVerify',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Truth Shield for the Digital Age',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
-                    ),
-                  ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
-                ],
+                    ).animate().fadeIn(delay: 80.ms, duration: 300.ms),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Truth Shield for the Digital Age',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 11,
+                      ),
+                    ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            _navItem(context, Icons.home_rounded, 'Home', '/home', 0),
-            _navItem(context, Icons.chat_bubble_rounded, 'Chat', '/chat', 40),
-            _navItem(
-              context,
-              Icons.library_books_rounded,
-              'Library',
-              '/library',
-              80,
-            ),
-            _navItem(
-              context,
-              Icons.people_rounded,
-              'Community',
-              '/community',
-              120,
-            ),
-            _navItem(
-              context,
-              Icons.map_rounded,
-              'Threat Heatmap',
-              '/heatmap',
-              160,
-            ),
-            _navItem(context, Icons.person_rounded, 'Profile', '/profile', 200),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'v1.0.0',
-                style: TextStyle(color: AppColors.mediumGrey, fontSize: 11),
+              // Scrollable nav items for landscape safety
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 6),
+                      _navItem(context, Icons.home_rounded, 'Home', '/home', 0),
+                      _navItem(
+                        context,
+                        Icons.chat_bubble_rounded,
+                        'Chat',
+                        '/chat',
+                        40,
+                      ),
+                      _navItem(
+                        context,
+                        Icons.library_books_rounded,
+                        'Library',
+                        '/library',
+                        80,
+                      ),
+                      _navItem(
+                        context,
+                        Icons.people_rounded,
+                        'Community',
+                        '/community',
+                        120,
+                      ),
+                      _navItem(
+                        context,
+                        Icons.map_rounded,
+                        'Threat Heatmap',
+                        '/heatmap',
+                        160,
+                      ),
+                      _navItem(
+                        context,
+                        Icons.person_rounded,
+                        'Profile',
+                        '/profile',
+                        200,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'v1.0.0',
+                  style: TextStyle(color: AppColors.mediumGrey, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -308,13 +367,13 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                 borderRadius: BorderRadius.circular(10),
               ),
               selected: isSelected,
-              selectedTileColor: AppColors.deepBlue.withValues(
-                alpha: isDark ? 0.25 : 0.07,
-              ),
+              selectedTileColor: isDark
+                  ? AppColors.deepBlueLight.withValues(alpha: 0.15)
+                  : AppColors.deepBlue.withValues(alpha: 0.08),
               leading: Icon(
                 icon,
                 color: isSelected
-                    ? AppColors.deepBlue
+                    ? (isDark ? AppColors.deepBlueLight : AppColors.deepBlue)
                     : (isDark ? AppColors.mediumGrey : AppColors.darkGrey),
                 size: 20,
               ),
@@ -322,8 +381,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                 label,
                 style: TextStyle(
                   color: isSelected
-                      ? AppColors.deepBlue
-                      : (isDark ? AppColors.lightGrey : AppColors.darkGrey),
+                      ? (isDark ? AppColors.white : AppColors.deepBlue)
+                      : (isDark ? AppColors.white : AppColors.darkGrey),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: 14,
                 ),

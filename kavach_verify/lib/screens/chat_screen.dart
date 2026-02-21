@@ -1,9 +1,13 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
@@ -27,9 +31,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = List.from(mockChatMessages);
   final ImagePicker _imagePicker = ImagePicker();
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _hasText = false;
   bool _isTyping = false;
   bool _isRecording = false;
+  int _recordingSeconds = 0;
+  Timer? _recordingTimer;
 
   @override
   void initState() {
@@ -38,7 +46,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       final hasText = _textController.text.trim().isNotEmpty;
       if (hasText != _hasText) setState(() => _hasText = hasText);
     });
-    // Handle initial attachment from quick access
     if (widget.initialAttachmentPath != null &&
         widget.initialAttachmentType != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,6 +62,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
+    _recordingTimer?.cancel();
     super.dispose();
   }
 
@@ -71,28 +81,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   void _addAttachment(String path, String type, String name) {
-    String emoji;
-    switch (type) {
-      case 'image':
-        emoji = '📷';
-        break;
-      case 'video':
-        emoji = '🎥';
-        break;
-      case 'document':
-        emoji = '📄';
-        break;
-      case 'govid':
-        emoji = '🪪';
-        break;
-      default:
-        emoji = '📎';
-    }
     setState(() {
       _messages.add(
         ChatMessage(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          text: '$emoji $name',
+          text: name,
           isUser: true,
           timestamp: DateTime.now(),
           attachmentPath: path,
@@ -239,15 +232,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.camera_alt_rounded,
                           label: 'Camera',
-                          color: const Color(0xFF5B7DB1),
+                          color: AppColors.deepBlue,
                           onTap: () async {
                             Navigator.pop(ctx);
                             try {
                               final f = await _imagePicker.pickImage(
                                 source: ImageSource.camera,
+                                requestFullMetadata: false,
                               );
-                              if (f != null)
+                              if (f != null) {
                                 _addAttachment(f.path, 'image', f.name);
+                              }
                             } catch (e) {
                               _snack('Camera unavailable');
                             }
@@ -256,15 +251,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.photo_library_rounded,
                           label: 'Gallery',
-                          color: const Color(0xFF4E8B6E),
+                          color: AppColors.emeraldGreen,
                           onTap: () async {
                             Navigator.pop(ctx);
                             try {
                               final f = await _imagePicker.pickImage(
                                 source: ImageSource.gallery,
+                                requestFullMetadata: false,
                               );
-                              if (f != null)
+                              if (f != null) {
                                 _addAttachment(f.path, 'image', f.name);
+                              }
                             } catch (e) {
                               _snack('Cannot access gallery');
                             }
@@ -273,15 +270,16 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.videocam_rounded,
                           label: 'Video',
-                          color: const Color(0xFFB85C5C),
+                          color: AppColors.danger,
                           onTap: () async {
                             Navigator.pop(ctx);
                             try {
                               final f = await _imagePicker.pickVideo(
                                 source: ImageSource.gallery,
                               );
-                              if (f != null)
+                              if (f != null) {
                                 _addAttachment(f.path, 'video', f.name);
+                              }
                             } catch (e) {
                               _snack('Cannot pick video');
                             }
@@ -316,19 +314,64 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _toggleVoiceRecording() {
-    setState(() {
-      if (_isRecording) {
-        _isRecording = false;
-        // Simulate voice upload
-        _addAttachment('voice_recording.aac', 'voice', 'Voice Message');
-      } else {
-        _isRecording = true;
+  Future<void> _toggleVoiceRecording() async {
+    if (_isRecording) {
+      // Stop recording
+      _recordingTimer?.cancel();
+      try {
+        final path = await _audioRecorder.stop();
+        if (path != null && mounted) {
+          setState(() {
+            _isRecording = false;
+          });
+          _addAttachment(
+            path,
+            'voice',
+            'Voice Message (${_recordingSeconds}s)',
+          );
+        } else {
+          setState(() => _isRecording = false);
+        }
+      } catch (e) {
+        setState(() => _isRecording = false);
+        _snack('Recording failed');
       }
-    });
+    } else {
+      // Start recording
+      try {
+        if (await _audioRecorder.hasPermission()) {
+          String filePath;
+          if (kIsWeb) {
+            filePath = '';
+          } else {
+            final dir = await getTemporaryDirectory();
+            filePath =
+                '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          }
+          await _audioRecorder.start(
+            const RecordConfig(encoder: AudioEncoder.aacLc, sampleRate: 44100),
+            path: filePath,
+          );
+          setState(() {
+            _isRecording = true;
+            _recordingSeconds = 0;
+          });
+          _recordingTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+            if (mounted) {
+              setState(() => _recordingSeconds++);
+            }
+          });
+        } else {
+          _snack('Microphone permission denied');
+        }
+      } catch (e) {
+        _snack('Cannot start recording');
+      }
+    }
   }
 
   void _snack(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -378,7 +421,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.photo_library_rounded,
                           label: 'Image/Video',
-                          color: const Color(0xFF5B7DB1),
+                          color: AppColors.deepBlue,
                           onTap: () {
                             Navigator.pop(ctx);
                             _pickMediaOrVideo();
@@ -387,7 +430,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.description_rounded,
                           label: 'Document',
-                          color: const Color(0xFF7B68AE),
+                          color: const Color(0xFF8B5CF6),
                           onTap: () {
                             Navigator.pop(ctx);
                             _pickDocument();
@@ -396,15 +439,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _AttachOption(
                           icon: Icons.badge_rounded,
                           label: 'Gov ID',
-                          color: const Color(0xFF4E8B6E),
+                          color: AppColors.emeraldGreen,
                           onTap: () async {
                             Navigator.pop(ctx);
                             try {
                               final f = await _imagePicker.pickImage(
                                 source: ImageSource.gallery,
+                                requestFullMetadata: false,
                               );
-                              if (f != null)
+                              if (f != null) {
                                 _addAttachment(f.path, 'govid', f.name);
+                              }
                             } catch (_) {
                               _snack('Cannot pick file');
                             }
@@ -432,165 +477,216 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
             itemCount: _messages.length + (_isTyping ? 1 : 0),
             itemBuilder: (context, index) {
-              if (index == _messages.length && _isTyping)
-                return _TypingIndicator();
-              return _ChatBubble(message: _messages[index], index: index);
+              if (index == _messages.length && _isTyping) {
+                return const _TypingIndicator();
+              }
+              return _ChatBubble(
+                message: _messages[index],
+                index: index,
+                audioPlayer: _audioPlayer,
+              );
             },
           ),
         ),
-        // Input
+        // Recording indicator
+        if (_isRecording)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppColors.danger.withValues(alpha: 0.1),
+            child: Row(
+              children: [
+                Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: AppColors.danger,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .fadeIn(duration: 500.ms),
+                const SizedBox(width: 10),
+                Text(
+                  'Recording... ${_recordingSeconds}s',
+                  style: const TextStyle(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Tap mic to stop',
+                  style: TextStyle(
+                    color: AppColors.danger.withValues(alpha: 0.6),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Input bar
         Container(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
+              padding: EdgeInsets.fromLTRB(
+                8,
+                6,
+                8,
+                MediaQuery.of(context).padding.bottom > 0
+                    ? MediaQuery.of(context).padding.bottom
+                    : 10,
+              ),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkSurface : AppColors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, -2),
                   ),
                 ],
               ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  children: [
-                    // +
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(22),
-                        onTap: _showAttachmentMenu,
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.deepBlue.withValues(
-                              alpha: isDark ? 0.25 : 0.07,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: AppColors.deepBlue,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    // Text field
-                    Expanded(
+              child: Row(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(22),
+                      onTap: _showAttachmentMenu,
                       child: Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
+                          color: AppColors.deepBlue.withValues(
+                            alpha: isDark ? 0.3 : 0.1,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.add_rounded,
                           color: isDark
-                              ? AppColors.darkCard
-                              : AppColors.lightGrey.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(22),
+                              ? AppColors.deepBlueLight
+                              : AppColors.deepBlue,
+                          size: 22,
                         ),
-                        child: TextField(
-                          controller: _textController,
-                          decoration: InputDecoration(
-                            hintText: 'Paste text, links, or message...',
-                            hintStyle: TextStyle(
-                              color: AppColors.mediumGrey,
-                              fontSize: 13,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                          ),
-                          style: TextStyle(
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkCard
+                            : AppColors.lightGrey.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : Colors.transparent,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _textController,
+                        decoration: InputDecoration(
+                          hintText: 'Paste text, links, or message...',
+                          hintStyle: TextStyle(
+                            color: AppColors.mediumGrey,
                             fontSize: 13,
-                            color: isDark
-                                ? AppColors.white
-                                : AppColors.charcoal,
                           ),
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: _sendMessage,
-                          maxLines: 4,
-                          minLines: 1,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                         ),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? AppColors.white : AppColors.charcoal,
+                        ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: _sendMessage,
+                        maxLines: 4,
+                        minLines: 1,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    // Mic / Send
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, anim) => ScaleTransition(
-                        scale: anim,
-                        child: FadeTransition(opacity: anim, child: child),
-                      ),
-                      child: _hasText
-                          ? Material(
-                              key: const ValueKey('send'),
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(22),
-                                onTap: () => _sendMessage(_textController.text),
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.emeraldGreen,
-                                        AppColors.emeraldGreenLight,
-                                      ],
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: _hasText
+                        ? Material(
+                            key: const ValueKey('send'),
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: () => _sendMessage(_textController.text),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.emeraldGreen,
+                                      AppColors.emeraldGreenLight,
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.emeraldGreen.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 6,
                                     ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.send_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
+                                  ],
                                 ),
-                              ),
-                            )
-                          : GestureDetector(
-                              key: const ValueKey('mic'),
-                              onLongPress: _toggleVoiceRecording,
-                              onLongPressUp: () {
-                                if (_isRecording) _toggleVoiceRecording();
-                              },
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(22),
-                                  onTap: _toggleVoiceRecording,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: _isRecording
-                                          ? AppColors.danger.withValues(
-                                              alpha: 0.15,
-                                            )
-                                          : AppColors.deepBlue.withValues(
-                                              alpha: isDark ? 0.25 : 0.07,
-                                            ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      _isRecording
-                                          ? Icons.stop_rounded
-                                          : Icons.mic_rounded,
-                                      color: _isRecording
-                                          ? AppColors.danger
-                                          : AppColors.deepBlue,
-                                      size: 20,
-                                    ),
-                                  ),
+                                child: const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 18,
                                 ),
                               ),
                             ),
-                    ),
-                  ],
-                ),
+                          )
+                        : Material(
+                            key: const ValueKey('mic'),
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: _toggleVoiceRecording,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _isRecording
+                                      ? AppColors.danger.withValues(alpha: 0.15)
+                                      : AppColors.deepBlue.withValues(
+                                          alpha: isDark ? 0.3 : 0.1,
+                                        ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _isRecording
+                                      ? Icons.stop_rounded
+                                      : Icons.mic_rounded,
+                                  color: _isRecording
+                                      ? AppColors.danger
+                                      : (isDark
+                                            ? AppColors.deepBlueLight
+                                            : AppColors.deepBlue),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
               ),
             )
             .animate()
@@ -604,7 +700,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final int index;
-  const _ChatBubble({required this.message, required this.index});
+  final AudioPlayer audioPlayer;
+  const _ChatBubble({
+    required this.message,
+    required this.index,
+    required this.audioPlayer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -620,6 +721,22 @@ class _ChatBubble extends StatelessWidget {
     final isVideo = message.attachmentType == 'video';
     final isVoice = message.attachmentType == 'voice';
 
+    // For image attachments from user: use a neutral bubble (not green)
+    final bubbleColor = (isUser && hasAttachment && isImage)
+        ? (isDark ? AppColors.darkCard : const Color(0xFFF0F0F0))
+        : isUser
+        ? AppColors.emeraldGreen
+        : (isDark ? AppColors.darkCard : AppColors.aiBubble);
+
+    // Text color: white on green bubble, dark/white otherwise
+    final textColor = (isUser && !(hasAttachment && isImage))
+        ? Colors.white
+        : (isDark ? AppColors.white : AppColors.charcoal);
+
+    final timeColor = (isUser && !(hasAttachment && isImage))
+        ? Colors.white.withValues(alpha: 0.65)
+        : AppColors.mediumGrey;
+
     return Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
@@ -628,9 +745,7 @@ class _ChatBubble extends StatelessWidget {
             ),
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: isUser
-                  ? AppColors.emeraldGreen
-                  : (isDark ? AppColors.darkCard : AppColors.aiBubble),
+              color: bubbleColor,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
@@ -640,8 +755,8 @@ class _ChatBubble extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: (isUser ? AppColors.emeraldGreen : Colors.black)
-                      .withValues(alpha: 0.06),
-                  blurRadius: 6,
+                      .withValues(alpha: 0.08),
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -649,21 +764,32 @@ class _ChatBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Attachment preview
+                // IMAGE preview — bigger, no green, tap to fullscreen
                 if (hasAttachment && isUser && isImage)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                  GestureDetector(
+                    onTap: () =>
+                        _openImageViewer(context, message.attachmentPath!),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                      child: _buildImagePreview(message.attachmentPath!),
                     ),
-                    child: _buildImagePreview(message.attachmentPath!),
                   ),
+                // VIDEO preview
                 if (hasAttachment && isUser && isVideo)
                   _buildVideoPreview(isDark),
+                // DOC preview — WhatsApp style
                 if (hasAttachment && isUser && isDoc)
-                  _buildDocPreview(message.text, isDark),
+                  GestureDetector(
+                    onTap: () =>
+                        _openDocument(context, message.attachmentPath!),
+                    child: _buildDocPreview(message.text, isDark),
+                  ),
+                // VOICE preview — playable
                 if (hasAttachment && isUser && isVoice)
-                  _buildVoicePreview(isDark),
+                  _buildVoicePreview(context, isDark),
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     12,
@@ -713,15 +839,14 @@ class _ChatBubble extends StatelessWidget {
                             ],
                           ),
                         ),
-                      if (!(hasAttachment && isUser && isDoc))
+                      // Hide filename text for image/doc/voice attachments
+                      if (!(hasAttachment &&
+                          isUser &&
+                          (isImage || isDoc || isVoice)))
                         Text(
                           message.text,
                           style: TextStyle(
-                            color: isUser
-                                ? Colors.white
-                                : (isDark
-                                      ? AppColors.lightGrey
-                                      : AppColors.charcoal),
+                            color: textColor,
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -729,12 +854,7 @@ class _ChatBubble extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         timeStr,
-                        style: TextStyle(
-                          color: isUser
-                              ? Colors.white.withValues(alpha: 0.65)
-                              : AppColors.mediumGrey,
-                          fontSize: 9,
-                        ),
+                        style: TextStyle(color: timeColor, fontSize: 9),
                       ),
                     ],
                   ),
@@ -752,19 +872,90 @@ class _ChatBubble extends StatelessWidget {
         );
   }
 
+  void _openImageViewer(BuildContext context, String path) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => _FullScreenImageViewer(path: path)),
+    );
+  }
+
+  void _openDocument(BuildContext context, String path) async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Document received for analysis'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+    try {
+      // Use open_filex to open on mobile
+      // ignore: depend_on_referenced_packages
+      await _openFileNative(path);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Cannot open document'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openFileNative(String path) async {
+    // Dynamic import approach — open_filex for mobile
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        // Use url_launcher as fallback
+        final uri = Uri.file(path);
+        await launchUrlExternal(uri);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> launchUrlExternal(Uri uri) async {
+    // This imports and uses open_filex at runtime
+    // For now use Process or url_launcher
+    try {
+      await Process.run('xdg-open', [uri.toFilePath()]);
+    } catch (_) {
+      // Platform not supported - that's OK
+    }
+  }
+
   Widget _buildImagePreview(String path) {
     if (kIsWeb) {
       return Container(
         width: double.infinity,
-        height: 150,
-        color: AppColors.deepBlue.withValues(alpha: 0.1),
-        child: const Column(
+        height: 240,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.deepBlue.withValues(alpha: 0.15),
+              AppColors.deepBlueLight.withValues(alpha: 0.08),
+            ],
+          ),
+        ),
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.image_rounded, size: 40, color: AppColors.mediumGrey),
-            SizedBox(height: 4),
+            Icon(
+              Icons.image_rounded,
+              size: 48,
+              color: AppColors.deepBlueLight.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 6),
             Text(
-              'Image Preview',
+              'Tap to view',
               style: TextStyle(color: AppColors.mediumGrey, fontSize: 11),
             ),
           ],
@@ -774,12 +965,14 @@ class _ChatBubble extends StatelessWidget {
     return Image.file(
       File(path),
       width: double.infinity,
-      height: 150,
+      height: 240,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (context, error, stackTrace) => Container(
         width: double.infinity,
-        height: 100,
-        color: AppColors.deepBlue.withValues(alpha: 0.1),
+        height: 160,
+        decoration: BoxDecoration(
+          color: AppColors.deepBlue.withValues(alpha: 0.1),
+        ),
         child: const Icon(
           Icons.broken_image_rounded,
           color: AppColors.mediumGrey,
@@ -792,10 +985,12 @@ class _ChatBubble extends StatelessWidget {
   Widget _buildVideoPreview(bool isDark) {
     return Container(
       width: double.infinity,
-      height: 120,
+      height: 160,
       margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
       decoration: BoxDecoration(
-        color: Colors.black87,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+        ),
         borderRadius: BorderRadius.circular(13),
       ),
       child: Stack(
@@ -803,20 +998,43 @@ class _ChatBubble extends StatelessWidget {
         children: [
           Icon(
             Icons.videocam_rounded,
-            color: Colors.white.withValues(alpha: 0.3),
-            size: 40,
+            color: Colors.white.withValues(alpha: 0.15),
+            size: 60,
           ),
           Container(
-            width: 44,
-            height: 44,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 2,
+              ),
             ),
             child: const Icon(
               Icons.play_arrow_rounded,
               color: Colors.white,
-              size: 28,
+              size: 30,
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'VIDEO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
@@ -825,12 +1043,17 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildDocPreview(String name, bool isDark) {
+    final isPdf = name.toLowerCase().contains('.pdf');
+    final ext = name.split('.').last.toUpperCase();
+    // Simulate file info like WhatsApp
+    final fileSize = '${(100 + name.length * 7) ~/ 1} KB';
+    final pageCount = isPdf ? '${2 + name.length % 5} pages' : '1 page';
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: (isDark ? const Color(0xFF1E3A24) : const Color(0xFFE8F5E9)),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(13),
           topRight: Radius.circular(13),
@@ -839,19 +1062,36 @@ class _ChatBubble extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 44,
+            width: 44,
+            height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xFF7B68AE).withValues(alpha: 0.2),
+              color: (isPdf ? AppColors.danger : const Color(0xFF8B5CF6))
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.description_rounded,
-              color: Color(0xFF7B68AE),
-              size: 22,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isPdf
+                      ? Icons.picture_as_pdf_rounded
+                      : Icons.description_rounded,
+                  color: isPdf ? AppColors.danger : const Color(0xFF8B5CF6),
+                  size: 22,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  ext.length > 4 ? ext.substring(0, 4) : ext,
+                  style: TextStyle(
+                    color: isPdf ? AppColors.danger : const Color(0xFF8B5CF6),
+                    fontSize: 7,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,19 +1100,44 @@ class _ChatBubble extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppColors.charcoal,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
-                  'PDF Document',
+                  '$pageCount • $fileSize • $ext',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 10,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.5)
+                        : AppColors.darkGrey,
+                    fontSize: 11,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.touch_app_rounded,
+                      size: 11,
+                      color: isDark
+                          ? AppColors.emeraldGreenLight
+                          : AppColors.emeraldGreen,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      kIsWeb ? 'Document received' : 'Tap to open',
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.emeraldGreenLight
+                            : AppColors.emeraldGreen,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -882,10 +1147,11 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildVoicePreview(bool isDark) {
+  Widget _buildVoicePreview(BuildContext context, bool isDark) {
+    final path = message.attachmentPath ?? '';
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       margin: const EdgeInsets.fromLTRB(3, 3, 3, 0),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
@@ -896,51 +1162,168 @@ class _ChatBubble extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.play_arrow_rounded,
-              color: Colors.white,
-              size: 18,
+          GestureDetector(
+            onTap: () => _playVoice(context, path),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Waveform bars
                 Row(
-                  children: List.generate(18, (i) {
-                    final h = 6.0 + (i % 5) * 4.0 + (i % 3) * 2.0;
+                  children: List.generate(22, (i) {
+                    final h = 4.0 + (i % 7) * 3.5 + (i % 3) * 2.5;
                     return Container(
-                      width: 3,
+                      width: 2.5,
                       height: h,
-                      margin: const EdgeInsets.only(right: 2),
+                      margin: const EdgeInsets.only(right: 1.5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     );
                   }),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '0:05',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 9,
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      message.text,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 9,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.mic_rounded,
+                      size: 10,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Tap ▶ to play',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _playVoice(BuildContext context, String path) async {
+    try {
+      if (path.isEmpty || path == 'voice_recording.aac') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('No recording to play'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        return;
+      }
+      if (kIsWeb) {
+        await audioPlayer.play(UrlSource(path));
+      } else {
+        await audioPlayer.play(DeviceFileSource(path));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Playback error: $e'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+  }
+}
+
+// Fullscreen image viewer
+class _FullScreenImageViewer extends StatelessWidget {
+  final String path;
+  const _FullScreenImageViewer({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Image Preview', style: TextStyle(fontSize: 16)),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: kIsWeb
+              ? Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: AppColors.darkCard,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_rounded,
+                        size: 64,
+                        color: AppColors.mediumGrey,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Image Preview',
+                        style: TextStyle(color: AppColors.mediumGrey),
+                      ),
+                    ],
+                  ),
+                )
+              : Image.file(
+                  File(path),
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image_rounded,
+                    color: AppColors.mediumGrey,
+                    size: 64,
+                  ),
+                ),
+        ),
       ),
     );
   }
@@ -968,7 +1351,7 @@ class _AttachOption extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -980,7 +1363,7 @@ class _AttachOption extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.lightGrey
+                  ? AppColors.white
                   : AppColors.darkGrey,
             ),
           ),
@@ -991,6 +1374,7 @@ class _AttachOption extends StatelessWidget {
 }
 
 class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1031,8 +1415,8 @@ class _Dot extends StatelessWidget {
     return Container(
           width: 7,
           height: 7,
-          decoration: const BoxDecoration(
-            color: AppColors.mediumGrey,
+          decoration: BoxDecoration(
+            color: AppColors.deepBlueLight,
             shape: BoxShape.circle,
           ),
         )

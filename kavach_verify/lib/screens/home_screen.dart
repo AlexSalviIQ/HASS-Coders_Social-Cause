@@ -14,6 +14,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -51,18 +53,18 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: GridView.count(
-              crossAxisCount: 2,
+              crossAxisCount: isLandscape ? 4 : 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
-              childAspectRatio: 1.55,
+              childAspectRatio: isLandscape ? 1.8 : 1.55,
               children: [
                 _QuickAccessCard(
                   icon: Icons.photo_library_rounded,
                   label: 'Image / Video',
                   subtitle: 'Photos & clips',
-                  gradient: const [Color(0xFF5B7DB1), Color(0xFF7B9FD4)],
+                  gradient: const [Color(0xFF2962FF), Color(0xFF448AFF)],
                   delay: 0,
                   onTap: () => _pickMediaOrVideo(context),
                 ),
@@ -70,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.description_rounded,
                   label: 'Document Verify',
                   subtitle: 'PDFs & docs',
-                  gradient: const [Color(0xFF7B68AE), Color(0xFF9E8DD4)],
+                  gradient: const [Color(0xFF7C4DFF), Color(0xFFB388FF)],
                   delay: 80,
                   onTap: () => _pickDocument(context),
                 ),
@@ -78,7 +80,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.badge_rounded,
                   label: 'Gov ID Check',
                   subtitle: 'ID verification',
-                  gradient: const [Color(0xFF4E8B6E), Color(0xFF6BAE8E)],
+                  gradient: const [Color(0xFF00C853), Color(0xFF69F0AE)],
                   delay: 160,
                   onTap: () => _pickGovID(context),
                 ),
@@ -86,7 +88,7 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.map_rounded,
                   label: 'Threat Heatmap',
                   subtitle: 'View live threats',
-                  gradient: const [Color(0xFFB85C5C), Color(0xFFD47A7A)],
+                  gradient: const [Color(0xFFFF1744), Color(0xFFFF5252)],
                   delay: 240,
                   onTap: () => context.go('/heatmap'),
                 ),
@@ -131,14 +133,28 @@ class HomeScreen extends StatelessWidget {
             ),
           ).animate().fadeIn(delay: 350.ms, duration: 350.ms),
           const SizedBox(height: 6),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: mockDetections.length,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            itemBuilder: (context, i) =>
-                _DetectionFeedCard(item: mockDetections[i], index: i),
-          ),
+          isLandscape
+              ? GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 3.2,
+                  ),
+                  itemCount: mockDetections.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  itemBuilder: (context, i) =>
+                      _DetectionFeedCard(item: mockDetections[i], index: i),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: mockDetections.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  itemBuilder: (context, i) =>
+                      _DetectionFeedCard(item: mockDetections[i], index: i),
+                ),
           const SizedBox(height: 20),
         ],
       ),
@@ -185,11 +201,12 @@ class HomeScreen extends StatelessWidget {
                         _PickOption(
                           icon: Icons.camera_alt_rounded,
                           label: 'Camera',
-                          color: const Color(0xFF5B7DB1),
+                          color: const Color(0xFF2962FF),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
                               source: ImageSource.camera,
+                              requestFullMetadata: false,
                             );
                             if (file != null && context.mounted) {
                               context.go(
@@ -206,11 +223,12 @@ class HomeScreen extends StatelessWidget {
                         _PickOption(
                           icon: Icons.photo_library_rounded,
                           label: 'Gallery',
-                          color: const Color(0xFF4E8B6E),
+                          color: const Color(0xFF00C853),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
                               source: ImageSource.gallery,
+                              requestFullMetadata: false,
                             );
                             if (file != null && context.mounted) {
                               context.go(
@@ -227,7 +245,7 @@ class HomeScreen extends StatelessWidget {
                         _PickOption(
                           icon: Icons.videocam_rounded,
                           label: 'Video',
-                          color: const Color(0xFFB85C5C),
+                          color: const Color(0xFFFF1744),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickVideo(
@@ -315,11 +333,12 @@ class HomeScreen extends StatelessWidget {
                         _PickOption(
                           icon: Icons.camera_alt_rounded,
                           label: 'Capture ID',
-                          color: const Color(0xFF4E8B6E),
+                          color: const Color(0xFF00C853),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
                               source: ImageSource.camera,
+                              requestFullMetadata: false,
                             );
                             if (file != null && context.mounted) {
                               context.go(
@@ -336,11 +355,12 @@ class HomeScreen extends StatelessWidget {
                         _PickOption(
                           icon: Icons.upload_file_rounded,
                           label: 'Upload ID',
-                          color: const Color(0xFF7B68AE),
+                          color: const Color(0xFF7C4DFF),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
                               source: ImageSource.gallery,
+                              requestFullMetadata: false,
                             );
                             if (file != null && context.mounted) {
                               context.go(
@@ -388,7 +408,7 @@ class _PickOption extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -442,9 +462,9 @@ class _QuickAccessCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: gradient[0].withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: gradient[0].withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -458,7 +478,7 @@ class _QuickAccessCard extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(icon, color: Colors.white, size: 20),
@@ -475,7 +495,7 @@ class _QuickAccessCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 10,
                       ),
                     ),
@@ -532,17 +552,17 @@ class _DetectionFeedCard extends StatelessWidget {
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
-        return const Color(0xFF5B7DB1);
+        return const Color(0xFF2962FF);
       case 'image':
-        return const Color(0xFFD4714E);
+        return const Color(0xFFFF5252);
       case 'video':
-        return const Color(0xFF4E8B6E);
+        return const Color(0xFF00C853);
       case 'voice':
-        return const Color(0xFF6E8BC4);
+        return const Color(0xFF7C4DFF);
       case 'document':
-        return const Color(0xFF7B68AE);
+        return const Color(0xFF7C4DFF);
       case 'link':
-        return const Color(0xFFB8963C);
+        return const Color(0xFFF59E0B);
       default:
         return AppColors.danger;
     }
@@ -652,14 +672,17 @@ class _DetectionFeedCard extends StatelessWidget {
                               color: AppColors.mediumGrey,
                             ),
                             const SizedBox(width: 3),
-                            Text(
-                              item.location,
-                              style: const TextStyle(
-                                color: AppColors.mediumGrey,
-                                fontSize: 10,
+                            Flexible(
+                              child: Text(
+                                item.location,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.mediumGrey,
+                                  fontSize: 10,
+                                ),
                               ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 7,

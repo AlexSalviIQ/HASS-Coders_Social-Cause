@@ -2,26 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const Color deepBlue = Color(0xFF1B2838);
-  static const Color deepBlueDark = Color(0xFF0F1923);
-  static const Color deepBlueLight = Color(0xFF2C4A6E);
-  static const Color emeraldGreen = Color(0xFF34A853);
-  static const Color emeraldGreenDark = Color(0xFF2D8E47);
-  static const Color emeraldGreenLight = Color(0xFF4CAF6A);
+  // Primary Blues - vibrant
+  static const Color deepBlue = Color(0xFF1565C0);
+  static const Color deepBlueDark = Color(0xFF0D47A1);
+  static const Color deepBlueLight = Color(0xFF42A5F5);
+  // Greens - vibrant
+  static const Color emeraldGreen = Color(0xFF00C853);
+  static const Color emeraldGreenDark = Color(0xFF00A846);
+  static const Color emeraldGreenLight = Color(0xFF69F0AE);
+  // Neutrals
   static const Color white = Color(0xFFFFFFFF);
-  static const Color offWhite = Color(0xFFF5F6F8);
-  static const Color lightGrey = Color(0xFFE4E7EB);
-  static const Color mediumGrey = Color(0xFF9CA3AF);
-  static const Color darkGrey = Color(0xFF4B5563);
-  static const Color charcoal = Color(0xFF1F2937);
-  static const Color aiBubble = Color(0xFFE8ECF2);
-  static const Color userBubble = Color(0xFF34A853);
-  static const Color danger = Color(0xFFDC3545);
-  static const Color warning = Color(0xFFE8A317);
-  static const Color info = Color(0xFF2B7DE9);
-  static const Color darkBackground = Color(0xFF0F1117);
-  static const Color darkSurface = Color(0xFF1A1D27);
-  static const Color darkCard = Color(0xFF242833);
+  static const Color offWhite = Color(0xFFF5F7FA);
+  static const Color lightGrey = Color(0xFFE0E4EA);
+  static const Color mediumGrey = Color(0xFF8E99A4);
+  static const Color darkGrey = Color(0xFF4A5568);
+  static const Color charcoal = Color(0xFF1A202C);
+  // Chat
+  static const Color aiBubble = Color(0xFFE3F2FD);
+  static const Color userBubble = Color(0xFF00C853);
+  // Status
+  static const Color danger = Color(0xFFEF4444);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF3B82F6);
+  // Dark mode
+  static const Color darkBackground = Color(0xFF0D1117);
+  static const Color darkSurface = Color(0xFF161B22);
+  static const Color darkCard = Color(0xFF21262D);
+  static const Color darkBorder = Color(0xFF30363D);
 }
 
 class AppTheme {
@@ -47,8 +54,8 @@ class AppTheme {
     ),
     cardTheme: CardThemeData(
       color: AppColors.white,
-      elevation: 1,
-      shadowColor: AppColors.deepBlue.withValues(alpha: 0.06),
+      elevation: 2,
+      shadowColor: AppColors.deepBlue.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -86,7 +93,7 @@ class AppTheme {
       surface: AppColors.darkSurface,
       onPrimary: AppColors.white,
       onSecondary: AppColors.white,
-      onSurface: AppColors.lightGrey,
+      onSurface: AppColors.white,
     ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
     appBarTheme: const AppBarTheme(

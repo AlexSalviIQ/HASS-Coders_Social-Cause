@@ -1,27 +1,23 @@
 ﻿Analyzing kavach_verify...                                      
 
-warning - Unused import: '../services/api_service.dart' - lib\screens\chat_screen.dart:8:8 - unused_import
-   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\profile_screen.dart:173:15 - deprecated_member_use
-   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\screens\profile_screen.dart:183:15 - deprecated_member_use
-  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+warning - The value of the field '_lastRecordingPath' isn't used - lib\screens\chat_screen.dart:41:11 - unused_field
 
-flutter : 4 issues 
-found. (ran in 1.4s)
+flutter : 1 issue 
+found. (ran in 2.1s)
 At line:1 char:1
 + flutter analyze 
 2>&1 | Out-File 
 -FilePath 
-"analyze_output.txt" 
--Encod ...
+"D:\projects\line of 
+code\k ...
 + 
 ~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo   
            : NotSpe  
-  cified: (4 issue   
- s found. (ran in    
- 1.4s):String) [    
-], RemoteExcepti    
-on
+  cified: (1 issue   
+  found. (ran in     
+2.1s):String) []    
+, RemoteExceptio    n
     + FullyQualified 
    ErrorId : Native  
   CommandError

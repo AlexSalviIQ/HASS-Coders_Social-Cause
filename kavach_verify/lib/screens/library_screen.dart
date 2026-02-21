@@ -5,83 +5,137 @@ import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
+  @override
+  State<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends State<LibraryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<DetectionItem> get _filteredItems {
+    if (_searchQuery.isEmpty) return mockDetections;
+    final q = _searchQuery.toLowerCase();
+    return mockDetections.where((item) {
+      return item.title.toLowerCase().contains(q) ||
+          item.description.toLowerCase().contains(q) ||
+          item.category.toLowerCase().contains(q) ||
+          item.location.toLowerCase().contains(q);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fakeItems = mockDetections.where((i) => i.isFake).toList();
-
+    final items = _filteredItems;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Search bar
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 22,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.danger,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isDark
+                      ? AppColors.darkCard
+                      : AppColors.lightGrey.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : Colors.transparent,
+                    width: 1,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Detected Fakes',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.white : AppColors.charcoal,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${fakeItems.length} items',
-                  style: const TextStyle(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search detections...',
+                    hintStyle: TextStyle(
+                      color: AppColors.mediumGrey,
+                      fontSize: 13,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: isDark
+                          ? AppColors.deepBlueLight
+                          : AppColors.deepBlue,
+                      size: 20,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: AppColors.mediumGrey,
+                              size: 18,
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? AppColors.white : AppColors.charcoal,
                   ),
                 ),
               ),
-            ],
-          ),
-        ).animate().fadeIn(duration: 400.ms),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-          child: Text(
-            'Content flagged as fake by KavachVerify AI',
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
+            )
+            .animate()
+            .fadeIn(duration: 300.ms)
+            .slideY(begin: -0.05, duration: 300.ms, curve: Curves.easeOutCubic),
+        // Results info
+        if (_searchQuery.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+            child: Text(
+              '${items.length} result${items.length != 1 ? 's' : ''} found',
+              style: TextStyle(fontSize: 11, color: AppColors.mediumGrey),
             ),
           ),
-        ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
+        // List
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.72,
-            ),
-            itemCount: fakeItems.length,
-            itemBuilder: (context, index) =>
-                _LibraryCard(item: fakeItems[index], index: index),
-          ),
+          child: items.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 48,
+                        color: AppColors.mediumGrey.withValues(alpha: 0.4),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No results for "$_searchQuery"',
+                        style: TextStyle(
+                          color: AppColors.mediumGrey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  itemCount: items.length,
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (context, index) =>
+                      _LibraryCard(item: items[index], index: index),
+                ),
         ),
       ],
     );
@@ -93,7 +147,7 @@ class _LibraryCard extends StatelessWidget {
   final int index;
   const _LibraryCard({required this.item, required this.index});
 
-  IconData get _icon {
+  IconData get _categoryIcon {
     switch (item.category) {
       case 'text':
         return Icons.text_fields_rounded;
@@ -112,23 +166,31 @@ class _LibraryCard extends StatelessWidget {
     }
   }
 
-  Color get _color {
+  Color get _categoryColor {
     switch (item.category) {
       case 'text':
-        return const Color(0xFF667EEA);
+        return const Color(0xFF2962FF);
       case 'image':
-        return const Color(0xFFF5576C);
+        return const Color(0xFFFF5252);
       case 'video':
-        return const Color(0xFF43E97B);
+        return const Color(0xFF00C853);
       case 'voice':
-        return const Color(0xFF4FACFE);
+        return const Color(0xFF7C4DFF);
       case 'document':
-        return const Color(0xFFF093FB);
+        return const Color(0xFF8B5CF6);
       case 'link':
-        return const Color(0xFFF39C12);
+        return const Color(0xFFF59E0B);
       default:
         return AppColors.danger;
     }
+  }
+
+  String get _timeAgo {
+    final diff = DateTime.now().difference(item.detectedAt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${diff.inDays ~/ 7}w ago';
   }
 
   @override
@@ -137,141 +199,188 @@ class _LibraryCard extends StatelessWidget {
     return GestureDetector(
           onTap: () => context.go('/library/detail/${item.id}'),
           child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkCard : AppColors.white,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
                   color: (isDark ? Colors.black : AppColors.deepBlue)
-                      .withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                      .withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 80,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        _color.withValues(alpha: 0.15),
-                        _color.withValues(alpha: 0.05),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Color bar
+                  Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      color: _categoryColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        bottomLeft: Radius.circular(14),
+                      ),
+                    ),
+                  ),
+                  // Icon area
+                  Container(
+                    width: 52,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: _categoryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            _categoryIcon,
+                            color: _categoryColor,
+                            size: 20,
+                          ),
+                        ),
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                    ),
                   ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Icon(
-                          _icon,
-                          size: 36,
-                          color: _color.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.danger,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'FAKE',
+                  const SizedBox(width: 4),
+                  // Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.white
+                                  : AppColors.charcoal,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.white
-                                : AppColors.charcoal,
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 12,
-                              color: AppColors.mediumGrey,
+                          const SizedBox(height: 4),
+                          Text(
+                            item.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark
+                                  ? AppColors.mediumGrey
+                                  : AppColors.darkGrey,
+                              fontSize: 11,
+                              height: 1.4,
                             ),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                item.location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.mediumGrey,
-                                  fontSize: 10,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 11,
+                                color: AppColors.mediumGrey,
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  item.location,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.mediumGrey,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Text(
-                          item.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark
-                                ? AppColors.mediumGrey
-                                : AppColors.darkGrey,
-                            height: 1.3,
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _categoryColor.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item.category,
+                                  style: TextStyle(
+                                    color: _categoryColor,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.danger.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${(item.confidenceScore * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: AppColors.danger,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                _timeAgo,
+                                style: const TextStyle(
+                                  color: AppColors.mediumGrey,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  // Chevron
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.mediumGrey.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 200 + (index * 100)),
-          duration: 400.ms,
+          delay: Duration(milliseconds: 100 + index * 60),
+          duration: 300.ms,
         )
         .slideY(
-          begin: 0.1,
-          delay: Duration(milliseconds: 200 + (index * 100)),
-          duration: 400.ms,
+          begin: 0.05,
+          delay: Duration(milliseconds: 100 + index * 60),
+          duration: 300.ms,
           curve: Curves.easeOutCubic,
         );
   }
