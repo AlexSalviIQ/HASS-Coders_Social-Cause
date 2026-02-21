@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -359,7 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isDark: isDark,
             trailing: Switch(
               value: themeProvider.isDarkMode,
-              onChanged: (_) => themeProvider.toggleTheme(),
+              onChanged: (v) => themeProvider.toggleTheme(),
               activeThumbColor: AppColors.emeraldGreen,
             ),
           ),
@@ -579,78 +580,151 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ─── Edit Profile Sheet ───
   void _showEditProfileSheet(BuildContext context, bool isDark) {
+    // Strip +91 prefix for editing
+    final rawPhone = _phone.replaceAll(RegExp(r'[^\d]'), '');
+    final phoneDigits = rawPhone.length > 10
+        ? rawPhone.substring(rawPhone.length - 10)
+        : rawPhone;
+
     final nameC = TextEditingController(text: _name);
     final emailC = TextEditingController(text: _email);
-    final phoneC = TextEditingController(text: _phone);
+    final phoneC = TextEditingController(text: phoneDigits);
     final bioC = TextEditingController(text: _bio);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child:
-            Container(
-                  margin: const EdgeInsets.all(12),
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : AppColors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                const SizedBox(height: 10),
+                Container(
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.mediumGrey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.white : AppColors.charcoal,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Scrollable form
+                Flexible(
                   child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 32,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppColors.mediumGrey.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Edit Profile',
+                        // Full Name
+                        _fieldLabel('Full Name', isDark),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: nameC,
+                          keyboardType: TextInputType.name,
+                          textCapitalization: TextCapitalization.words,
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                             color: isDark
                                 ? AppColors.white
                                 : AppColors.charcoal,
                           ),
+                          decoration: _fieldDecoration(
+                            Icons.person_rounded,
+                            'Enter full name',
+                            isDark,
+                          ),
                         ),
-                        const SizedBox(height: 20),
-                        _EditField(
-                          controller: nameC,
-                          label: 'Full Name',
-                          icon: Icons.person_rounded,
-                          isDark: isDark,
-                        ),
-                        const SizedBox(height: 14),
-                        _EditField(
+                        const SizedBox(height: 16),
+                        // Email
+                        _fieldLabel('Email Address', isDark),
+                        const SizedBox(height: 6),
+                        TextField(
                           controller: emailC,
-                          label: 'Email Address',
-                          icon: Icons.email_rounded,
-                          isDark: isDark,
                           keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? AppColors.white
+                                : AppColors.charcoal,
+                          ),
+                          decoration: _fieldDecoration(
+                            Icons.email_rounded,
+                            'Enter email',
+                            isDark,
+                          ),
                         ),
-                        const SizedBox(height: 14),
-                        _EditField(
+                        const SizedBox(height: 16),
+                        // Phone
+                        _fieldLabel('Phone Number', isDark),
+                        const SizedBox(height: 6),
+                        TextField(
                           controller: phoneC,
-                          label: 'Phone Number',
-                          icon: Icons.phone_rounded,
-                          isDark: isDark,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
+                          maxLength: 10,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? AppColors.white
+                                : AppColors.charcoal,
+                          ),
+                          decoration: _fieldDecoration(
+                            Icons.phone_rounded,
+                            '10-digit number',
+                            isDark,
+                            prefixText: '+91 ',
+                            counterText: '',
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                         ),
-                        const SizedBox(height: 14),
-                        _EditField(
+                        const SizedBox(height: 16),
+                        // Bio
+                        _fieldLabel('Bio', isDark),
+                        const SizedBox(height: 6),
+                        TextField(
                           controller: bioC,
-                          label: 'Bio',
-                          icon: Icons.short_text_rounded,
-                          isDark: isDark,
+                          keyboardType: TextInputType.text,
                           maxLines: 2,
+                          maxLength: 100,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? AppColors.white
+                                : AppColors.charcoal,
+                          ),
+                          decoration: _fieldDecoration(
+                            Icons.short_text_rounded,
+                            'Write a short bio',
+                            isDark,
+                            counterText: '',
+                          ),
                         ),
                         const SizedBox(height: 22),
                         Row(
@@ -682,6 +756,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () {
+                                  final phone = phoneC.text.trim();
+                                  if (phone.isNotEmpty && phone.length != 10) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Phone number must be 10 digits',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   setState(() {
                                     _name = nameC.text.trim().isEmpty
                                         ? _name
@@ -689,9 +774,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     _email = emailC.text.trim().isEmpty
                                         ? _email
                                         : emailC.text.trim();
-                                    _phone = phoneC.text.trim().isEmpty
+                                    _phone = phone.isEmpty
                                         ? _phone
-                                        : phoneC.text.trim();
+                                        : '+91 ${phone.substring(0, 5)} ${phone.substring(5)}';
                                     _bio = bioC.text.trim();
                                   });
                                   Navigator.pop(ctx);
@@ -716,21 +801,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
-                )
-                .animate()
-                .fadeIn(duration: 200.ms)
-                .slideY(begin: 0.1, duration: 250.ms),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _fieldLabel(String text, bool isDark) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
       ),
+    );
+  }
+
+  InputDecoration _fieldDecoration(
+    IconData icon,
+    String hint,
+    bool isDark, {
+    String? prefixText,
+    String? counterText,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        fontSize: 13,
+        color: AppColors.mediumGrey.withValues(alpha: 0.7),
+      ),
+      prefixIcon: Icon(icon, size: 20, color: AppColors.deepBlue),
+      prefixText: prefixText,
+      prefixStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: isDark ? AppColors.white : AppColors.charcoal,
+      ),
+      counterText: counterText,
+      filled: true,
+      fillColor: isDark
+          ? AppColors.darkSurface
+          : AppColors.lightGrey.withValues(alpha: 0.5),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: AppColors.deepBlue.withValues(alpha: 0.5),
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );
   }
 
   // ─── Feedback Dialog ───
   void _showFeedbackDialog(BuildContext context, bool isDark) {
     final controller = TextEditingController();
-    int _rating = 0;
+    int rating = 0;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -754,11 +891,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (i) {
                   return GestureDetector(
-                    onTap: () => setDialogState(() => _rating = i + 1),
+                    onTap: () => setDialogState(() => rating = i + 1),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Icon(
-                        i < _rating
+                        i < rating
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
                         color: const Color(0xFFF39C12),
@@ -1258,60 +1395,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: Text(msg),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-}
-
-// ─── Reusable Widgets ───
-
-class _EditField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData icon;
-  final bool isDark;
-  final TextInputType keyboardType;
-  final int maxLines;
-  const _EditField({
-    required this.controller,
-    required this.label,
-    required this.icon,
-    required this.isDark,
-    this.keyboardType = TextInputType.text,
-    this.maxLines = 1,
-  });
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      style: TextStyle(
-        fontSize: 14,
-        color: isDark ? AppColors.white : AppColors.charcoal,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(fontSize: 13, color: AppColors.mediumGrey),
-        prefixIcon: Icon(icon, size: 20, color: AppColors.deepBlue),
-        filled: true,
-        fillColor: isDark
-            ? AppColors.darkSurface
-            : AppColors.lightGrey.withValues(alpha: 0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.deepBlue.withValues(alpha: 0.5),
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
       ),
     );
   }

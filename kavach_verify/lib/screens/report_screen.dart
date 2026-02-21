@@ -44,7 +44,7 @@ class _ReportScreenState extends State<ReportScreen> {
           });
         });
       }
-    } catch (_) {
+    } catch (e) {
       _snack('Cannot pick document');
     }
   }
@@ -105,7 +105,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           });
                         });
                       }
-                    } catch (_) {
+                    } catch (e) {
                       _snack('Cannot pick image');
                     }
                   },
@@ -129,7 +129,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           });
                         });
                       }
-                    } catch (_) {
+                    } catch (e) {
                       _snack('Cannot pick video');
                     }
                   },
@@ -161,7 +161,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           });
                         });
                       }
-                    } catch (_) {
+                    } catch (e) {
                       _snack('Cannot pick document');
                     }
                   },
@@ -365,7 +365,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                   : Image.file(
                                       File(path),
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(
+                                      errorBuilder: (_, _, _) => const Icon(
                                         Icons.image_rounded,
                                         color: AppColors.mediumGrey,
                                         size: 30,

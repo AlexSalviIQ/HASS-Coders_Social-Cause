@@ -13,7 +13,7 @@ class WhatsAppBotScreen extends StatelessWidget {
     final uri = Uri.parse(_whatsappLink);
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
+    } catch (e) {
       try {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       } catch (_) {}

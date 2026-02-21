@@ -263,7 +263,9 @@ class HomeScreen extends StatelessWidget {
           },
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      // file pick cancelled
+    }
   }
 
   void _pickGovID(BuildContext context) {

@@ -15,8 +15,8 @@ void main() {
       enabled: true,
       builder: (context) => MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
+          ChangeNotifierProvider(create: (ctx) => AuthProvider()),
         ],
         child: const KavachVerifyApp(),
       ),

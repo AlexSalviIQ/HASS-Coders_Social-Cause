@@ -52,7 +52,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     });
     if (widget.initialAttachmentPath != null &&
         widget.initialAttachmentType != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((v) {
         _stageAttachment(
           widget.initialAttachmentPath!,
           widget.initialAttachmentType!,
@@ -336,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           result.files.single.name,
         );
       }
-    } catch (_) {
+    } catch (e) {
       _snack('Cannot pick document');
     }
   }
@@ -485,7 +485,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                               if (f != null) {
                                 _stageAttachment(f.path, 'govid', f.name);
                               }
-                            } catch (_) {
+                            } catch (e) {
                               _snack('Cannot pick file');
                             }
                           },
@@ -784,168 +784,140 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
         // Input bar
         Container(
-          padding: EdgeInsets.fromLTRB(
-            8,
-            6,
-            8,
-            MediaQuery.of(context).padding.bottom > 0
-                ? MediaQuery.of(context).padding.bottom
-                : 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : AppColors.white,
-            boxShadow: _pendingAttachments.isEmpty
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
-                    ),
-                  ]
-                : [],
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? AppColors.darkBorder
+                    : Colors.black.withValues(alpha: 0.08),
+                width: 0.5,
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
-                  onTap: _showAttachmentMenu,
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                // Attach button – subtle, no colored background
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _showAttachmentMenu,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: isDark
+                            ? AppColors.mediumGrey
+                            : AppColors.darkGrey,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                // Text field – the only visible rounded container
+                Expanded(
                   child: Container(
-                    width: 40,
-                    height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.deepBlue.withValues(
-                        alpha: isDark ? 0.3 : 0.1,
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.add_rounded,
                       color: isDark
-                          ? AppColors.deepBlueLight
-                          : AppColors.deepBlue,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkCard
-                        : AppColors.lightGrey.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : Colors.transparent,
-                      width: 1,
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _textController,
-                    decoration: InputDecoration(
-                      hintText: 'Paste text, links, or message...',
-                      hintStyle: TextStyle(
-                        color: AppColors.mediumGrey,
-                        fontSize: 13,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                          ? AppColors.darkCard
+                          : const Color(0xFFF0F1F3),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : const Color(0xFFDCDFE3),
+                        width: 0.5,
                       ),
                     ),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.white : AppColors.charcoal,
+                    child: TextField(
+                      controller: _textController,
+                      decoration: InputDecoration(
+                        hintText: 'Message...',
+                        hintStyle: TextStyle(
+                          color: AppColors.mediumGrey,
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? AppColors.white : AppColors.charcoal,
+                      ),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: _sendMessage,
+                      maxLines: 4,
+                      minLines: 1,
                     ),
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: _sendMessage,
-                    maxLines: 4,
-                    minLines: 1,
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, anim) => ScaleTransition(
-                  scale: anim,
-                  child: FadeTransition(opacity: anim, child: child),
-                ),
-                child: (_hasText || _pendingAttachments.isNotEmpty)
-                    ? Material(
-                        key: const ValueKey('send'),
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(22),
-                          onTap: () => _sendMessage(_textController.text),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.emeraldGreen,
-                                  AppColors.emeraldGreenLight,
-                                ],
+                const SizedBox(width: 4),
+                // Send / Mic button – clean, professional
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) => ScaleTransition(
+                    scale: anim,
+                    child: FadeTransition(opacity: anim, child: child),
+                  ),
+                  child: (_hasText || _pendingAttachments.isNotEmpty)
+                      ? Material(
+                          key: const ValueKey('send'),
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _sendMessage(_textController.text),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.deepBlue
+                                    : AppColors.deepBlueDark,
+                                shape: BoxShape.circle,
                               ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.emeraldGreen.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 6,
-                                ),
-                              ],
+                              child: const Icon(
+                                Icons.arrow_upward_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.send_rounded,
-                              color: Colors.white,
-                              size: 18,
+                          ),
+                        )
+                      : Material(
+                          key: const ValueKey('mic'),
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: _toggleVoiceRecording,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                _isRecording
+                                    ? Icons.stop_rounded
+                                    : Icons.mic_none_rounded,
+                                color: _isRecording
+                                    ? AppColors.danger
+                                    : (isDark
+                                          ? AppColors.mediumGrey
+                                          : AppColors.darkGrey),
+                                size: 24,
+                              ),
                             ),
                           ),
                         ),
-                      )
-                    : Material(
-                        key: const ValueKey('mic'),
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(22),
-                          onTap: _toggleVoiceRecording,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _isRecording
-                                  ? AppColors.danger.withValues(alpha: 0.15)
-                                  : AppColors.deepBlue.withValues(
-                                      alpha: isDark ? 0.3 : 0.1,
-                                    ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _isRecording
-                                  ? Icons.stop_rounded
-                                  : Icons.mic_rounded,
-                              color: _isRecording
-                                  ? AppColors.danger
-                                  : (isDark
-                                        ? AppColors.deepBlueLight
-                                        : AppColors.deepBlue),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ).animate().fadeIn(duration: 250.ms),
+        ),
       ],
     );
   }
@@ -979,7 +951,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
   @override
   void initState() {
     super.initState();
-    widget.audioPlayer.onPlayerComplete.listen((_) {
+    widget.audioPlayer.onPlayerComplete.listen((v) {
       if (mounted) setState(() => _isPlaying = false);
     });
   }
@@ -1060,20 +1032,20 @@ class _ChatBubbleState extends State<_ChatBubble> {
     final isVideo = message.attachmentType == 'video';
     final isVoice = message.attachmentType == 'voice';
 
-    // For image attachments from user: use a neutral bubble (not green)
+    // Professional bubble colors
     final bubbleColor = (isUser && hasAttachment && isImage)
         ? (isDark ? AppColors.darkCard : const Color(0xFFF0F0F0))
         : isUser
-        ? AppColors.emeraldGreen
-        : (isDark ? AppColors.darkCard : AppColors.aiBubble);
+        ? (isDark ? const Color(0xFF1E3A5F) : const Color(0xFF1B3A5C))
+        : (isDark ? AppColors.darkCard : const Color(0xFFF0F2F5));
 
-    // Text color: white on green bubble, dark/white otherwise
+    // Text color: white on user bubble, standard otherwise
     final textColor = (isUser && !(hasAttachment && isImage))
         ? Colors.white
         : (isDark ? AppColors.white : AppColors.charcoal);
 
     final timeColor = (isUser && !(hasAttachment && isImage))
-        ? Colors.white.withValues(alpha: 0.65)
+        ? Colors.white.withValues(alpha: 0.55)
         : AppColors.mediumGrey;
 
     return Align(
@@ -1093,10 +1065,9 @@ class _ChatBubbleState extends State<_ChatBubble> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (isUser ? AppColors.emeraldGreen : Colors.black)
-                      .withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
@@ -1122,7 +1093,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => _FullScreenVideoViewer(
+                          builder: (ctx) => _FullScreenVideoViewer(
                             path: message.attachmentPath!,
                           ),
                         ),
@@ -1247,7 +1218,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
 
   void _openImageViewer(BuildContext context, String path) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => _FullScreenImageViewer(path: path)),
+      MaterialPageRoute(builder: (ctx) => _FullScreenImageViewer(path: path)),
     );
   }
 
@@ -1268,7 +1239,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
       // Use open_filex to open on mobile
       // ignore: depend_on_referenced_packages
       await _openFileNative(path);
-    } catch (_) {
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1289,7 +1260,7 @@ class _ChatBubbleState extends State<_ChatBubble> {
       if (await file.exists()) {
         await OpenFilex.open(path);
       }
-    } catch (_) {
+    } catch (e) {
       // File cannot be opened
     }
   }

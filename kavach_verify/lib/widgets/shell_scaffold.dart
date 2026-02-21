@@ -66,14 +66,14 @@ class _ShellScaffoldState extends State<ShellScaffold> {
       canPop: _isHome,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((v) {
             if (context.mounted) context.go('/home');
           });
         }
       },
       child: Scaffold(
         key: _scaffoldKey,
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         drawer: _buildDrawer(context, isDark),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
