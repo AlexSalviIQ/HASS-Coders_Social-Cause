@@ -80,16 +80,8 @@ def download_twilio_media(media_url, auth_sid, auth_token, content_type="image/j
 # --- HELPER 2: AI IMAGE CHECK WITH THRESHOLDS ---
 def check_image_for_ai(image_path):
     try:
-        from PIL import Image
-        import io
-
-        # Re-encode as JPEG to ensure HF API can parse it (handles PNG/WebP/etc.)
-        img = Image.open(image_path)
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        buf = io.BytesIO()
-        img.save(buf, format="JPEG")
-        image_data = buf.getvalue()
+        with open(image_path, "rb") as f:
+            image_data = f.read()
         
         response = requests.post(API_URL, headers=headers, data=image_data)
         
