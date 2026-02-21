@@ -1,0 +1,9 @@
+.env
+__pycache__/
+venv/
+env/
+*.jpg
+*.mp4
+*.jfif
+*.png
+temp_*/
