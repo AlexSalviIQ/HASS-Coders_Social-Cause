@@ -1,2 +1,2 @@
 ﻿Analyzing kavach_verify...                                      
-No issues found! (ran in 2.3s)
+No issues found! (ran in 2.2s)

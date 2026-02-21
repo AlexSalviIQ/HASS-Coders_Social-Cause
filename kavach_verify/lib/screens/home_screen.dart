@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
             child: Text(
-              'Quick Verify',
+              'Quick Access',
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w700,

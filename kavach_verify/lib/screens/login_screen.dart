@@ -55,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Center(
@@ -67,29 +68,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   SizedBox(height: screenH * 0.04),
                   // Logo
-                  Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.emeraldGreen,
-                              AppColors.emeraldGreenLight,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.emeraldGreen.withValues(
-                                alpha: 0.3,
-                              ),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text('🛡️', style: TextStyle(fontSize: 34)),
+                  ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/kavach_logo.png',
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.contain,
                         ),
                       )
                       .animate()

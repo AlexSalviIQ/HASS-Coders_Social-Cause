@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -25,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _phoneController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -64,6 +66,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Center(
@@ -76,29 +79,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   SizedBox(height: screenH * 0.03),
                   // Logo
-                  Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.emeraldGreen,
-                              AppColors.emeraldGreenLight,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.emeraldGreen.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 16,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text('🛡️', style: TextStyle(fontSize: 30)),
+                  ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.asset(
+                          'assets/images/kavach_logo.png',
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.contain,
                         ),
                       )
                       .animate()
@@ -184,6 +171,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               }
                               if (!v.contains('@') || !v.contains('.')) {
                                 return 'Enter valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _buildField(
+                            controller: _phoneController,
+                            label: 'Phone Number',
+                            icon: Icons.phone_outlined,
+                            isDark: isDark,
+                            keyboardType: TextInputType.phone,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Enter phone number';
+                              }
+                              if (v.trim().length < 10) {
+                                return 'Enter valid phone number';
                               }
                               return null;
                             },

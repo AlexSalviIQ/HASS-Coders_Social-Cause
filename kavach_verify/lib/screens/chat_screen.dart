@@ -9,6 +9,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../theme/app_theme.dart';
 import '../data/mock_data.dart';
 import '../models/detection_item.dart';
@@ -713,6 +714,14 @@ class _ChatBubble extends StatefulWidget {
 
 class _ChatBubbleState extends State<_ChatBubble> {
   bool _isPlaying = false;
+  bool _isSpeaking = false;
+  static FlutterTts? _flutterTts;
+  static String? _currentSpeakingId;
+
+  FlutterTts get tts {
+    _flutterTts ??= FlutterTts();
+    return _flutterTts!;
+  }
 
   @override
   void initState() {
@@ -720,6 +729,57 @@ class _ChatBubbleState extends State<_ChatBubble> {
     widget.audioPlayer.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _isPlaying = false);
     });
+  }
+
+  /// Detect if text contains Devanagari characters (Hindi/Marathi)
+  bool _isDevanagari(String text) {
+    return RegExp(r'[\u0900-\u097F]').hasMatch(text);
+  }
+
+  Future<void> _speakText(String text) async {
+    if (_isSpeaking && _currentSpeakingId == message.id) {
+      // Stop speaking
+      await tts.stop();
+      if (mounted) {
+        setState(() => _isSpeaking = false);
+      }
+      _currentSpeakingId = null;
+      return;
+    }
+
+    // Stop any other bubble that's speaking
+    await tts.stop();
+    _currentSpeakingId = message.id;
+
+    // Set language based on text content
+    if (_isDevanagari(text)) {
+      await tts.setLanguage('hi-IN');
+    } else {
+      await tts.setLanguage('en-IN');
+    }
+
+    await tts.setSpeechRate(0.45);
+    await tts.setVolume(1.0);
+    await tts.setPitch(1.0);
+
+    tts.setCompletionHandler(() {
+      if (mounted) {
+        setState(() => _isSpeaking = false);
+      }
+      _currentSpeakingId = null;
+    });
+
+    // Strip markdown-style formatting for cleaner speech
+    final cleanText = text
+        .replaceAll(RegExp(r'\*\*'), '')
+        .replaceAll(RegExp(r'[•\n]+'), '. ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (mounted) {
+      setState(() => _isSpeaking = true);
+    }
+    await tts.speak(cleanText);
   }
 
   ChatMessage get message => widget.message;
@@ -823,36 +883,58 @@ class _ChatBubbleState extends State<_ChatBubble> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      AppColors.deepBlue,
-                                      AppColors.deepBlueLight,
-                                    ],
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(5),
+                                    child: Image.asset(
+                                      'assets/images/kavach_logo.png',
+                                      width: 16,
+                                      height: 16,
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    '🛡️',
-                                    style: TextStyle(fontSize: 8),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'KavachVerify AI',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppColors.deepBlueLight
+                                          : AppColors.deepBlue,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'KavachVerify AI',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppColors.deepBlueLight
-                                      : AppColors.deepBlue,
+                              GestureDetector(
+                                onTap: () => _speakText(message.text),
+                                child: Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        (_isSpeaking &&
+                                            _currentSpeakingId == message.id)
+                                        ? AppColors.deepBlue.withValues(
+                                            alpha: 0.15,
+                                          )
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(13),
+                                  ),
+                                  child: Icon(
+                                    (_isSpeaking &&
+                                            _currentSpeakingId == message.id)
+                                        ? Icons.volume_up_rounded
+                                        : Icons.volume_up_outlined,
+                                    size: 16,
+                                    color: isDark
+                                        ? AppColors.deepBlueLight
+                                        : AppColors.deepBlue,
+                                  ),
                                 ),
                               ),
                             ],

@@ -18,6 +18,23 @@ class ShellScaffold extends StatefulWidget {
 
 class _ShellScaffoldState extends State<ShellScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  int _verifyIndex = 0;
+  final List<String> _verifyWords = ['Verify', 'सत्यापन', 'पडताळणी'];
+
+  @override
+  void initState() {
+    super.initState();
+    _startCycling();
+  }
+
+  void _startCycling() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 3000));
+      if (!mounted) return false;
+      setState(() => _verifyIndex = (_verifyIndex + 1) % _verifyWords.length);
+      return mounted;
+    });
+  }
 
   String get _currentPageName {
     switch (widget.currentPath) {
@@ -119,31 +136,13 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.emeraldGreen,
-                                  AppColors.emeraldGreenLight,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.emeraldGreen.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 6,
-                                ),
-                              ],
-                            ),
-                            child: const Center(
-                              child: Text(
-                                '🛡️',
-                                style: TextStyle(fontSize: 15),
-                              ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              'assets/images/kavach_logo.png',
+                              width: 42,
+                              height: 42,
+                              fit: BoxFit.contain,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -151,14 +150,49 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'KavachVerify',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'Kavach',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 76,
+                                    child: AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 400,
+                                      ),
+                                      transitionBuilder: (child, anim) {
+                                        return FadeTransition(
+                                          opacity: anim,
+                                          child: child,
+                                        );
+                                      },
+                                      child: Align(
+                                        key: ValueKey(_verifyIndex),
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          _verifyWords[_verifyIndex],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -0.3,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               Text(
                                 _currentPageName,
@@ -254,8 +288,14 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text('🛡️', style: TextStyle(fontSize: 22)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/images/kavach_logo.png',
+                          width: 42,
+                          height: 42,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ).animate().fadeIn(duration: 300.ms),
                     const SizedBox(height: 10),

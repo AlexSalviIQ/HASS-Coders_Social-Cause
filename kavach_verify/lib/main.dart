@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
@@ -78,7 +78,7 @@ class _SplashGateState extends State<_SplashGate> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    Future.delayed(const Duration(milliseconds: 4000), () {
       if (mounted) setState(() => _showSplash = false);
     });
   }
@@ -96,112 +96,158 @@ class _SplashGateState extends State<_SplashGate> {
   }
 }
 
-class _KavachSplash extends StatelessWidget {
+class _KavachSplash extends StatefulWidget {
   const _KavachSplash({super.key});
+  @override
+  State<_KavachSplash> createState() => _KavachSplashState();
+}
+
+class _KavachSplashState extends State<_KavachSplash>
+    with TickerProviderStateMixin {
+  late AnimationController _slideController;
+  late Animation<double> _textFade;
+
+  int _verifyIndex = 0;
+  final List<String> _verifyWords = ['Verify', 'सत्यापन', 'पडताळणी'];
+  bool _showText = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _textFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _slideController,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    // After 800ms, slide logo left and show text
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() => _showText = true);
+        _slideController.forward();
+      }
+    });
+
+    // Start cycling after text has appeared
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) _startCycling();
+    });
+  }
+
+  void _startCycling() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (!mounted) return false;
+      setState(() => _verifyIndex = (_verifyIndex + 1) % _verifyWords.length);
+      return mounted;
+    });
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.deepBlue,
+      backgroundColor: Colors.white,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.emeraldGreen,
-                        AppColors.emeraldGreenLight,
+        child: AnimatedBuilder(
+          animation: _slideController,
+          builder: (context, child) {
+            // Logo moves from center to left as text appears
+            final slideProgress = _slideController.value;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/kavach_logo.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                // Text slides in from right
+                if (_showText) ...[
+                  SizedBox(width: 14 * slideProgress),
+                  Opacity(
+                    opacity: _textFade.value,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Kavach',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1A237E),
+                                letterSpacing: -0.5,
+                                height: 1.2,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 120,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 400),
+                                transitionBuilder: (child, anim) {
+                                  return FadeTransition(
+                                    opacity: anim,
+                                    child: child,
+                                  );
+                                },
+                                child: Align(
+                                  key: ValueKey(_verifyIndex),
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    _verifyWords[_verifyIndex],
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF388E3C),
+                                      letterSpacing: -0.3,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Truth Shield for the Digital Age',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.emeraldGreen.withValues(alpha: 0.3),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
                   ),
-                  child: const Center(
-                    child: Text('🛡️', style: TextStyle(fontSize: 38)),
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 600.ms)
-                .scale(
-                  begin: const Offset(0.4, 0.4),
-                  duration: 700.ms,
-                  curve: Curves.easeOutBack,
-                ),
-            const SizedBox(height: 24),
-            const Text(
-                  'KavachVerify',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 300.ms, duration: 500.ms)
-                .slideY(
-                  begin: 0.2,
-                  delay: 300.ms,
-                  duration: 500.ms,
-                  curve: Curves.easeOutCubic,
-                ),
-            const SizedBox(height: 6),
-            Text(
-              'Truth Shield for the Digital Age',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 13,
-              ),
-            ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
-            const SizedBox(height: 40),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _SplashDot(delay: 600),
-                const SizedBox(width: 6),
-                _SplashDot(delay: 750),
-                const SizedBox(width: 6),
-                _SplashDot(delay: 900),
+                ],
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
-  }
-}
-
-class _SplashDot extends StatelessWidget {
-  final int delay;
-  const _SplashDot({required this.delay});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.emeraldGreen,
-            shape: BoxShape.circle,
-          ),
-        )
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .fadeIn(delay: Duration(milliseconds: delay))
-        .scaleXY(
-          begin: 0.4,
-          end: 1.0,
-          delay: Duration(milliseconds: delay),
-          duration: 600.ms,
-          curve: Curves.easeInOut,
-        );
   }
 }
