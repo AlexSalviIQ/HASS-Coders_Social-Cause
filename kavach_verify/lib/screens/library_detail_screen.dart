@@ -49,17 +49,17 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
     if (item == null) return AppColors.danger;
     switch (item!.category) {
       case 'text':
-        return const Color(0xFF667EEA);
+        return AppColors.catText;
       case 'image':
-        return const Color(0xFFF5576C);
+        return AppColors.catImage;
       case 'video':
-        return const Color(0xFF43E97B);
+        return AppColors.catVideo;
       case 'voice':
-        return const Color(0xFF4FACFE);
+        return AppColors.catVoice;
       case 'document':
-        return const Color(0xFFF093FB);
+        return AppColors.catDocument;
       case 'link':
-        return const Color(0xFFF39C12);
+        return AppColors.catLink;
       default:
         return AppColors.danger;
     }

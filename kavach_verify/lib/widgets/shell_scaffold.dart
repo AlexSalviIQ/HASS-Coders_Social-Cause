@@ -79,11 +79,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
           preferredSize: const Size.fromHeight(56),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [AppColors.darkSurface, AppColors.darkSurface]
-                    : [AppColors.deepBlueDark, AppColors.deepBlue],
-              ),
+              color: isDark ? AppColors.darkSurface : AppColors.primary,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.12),
@@ -248,13 +244,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.deepBlueDark, AppColors.deepBlue],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
+                decoration: BoxDecoration(color: AppColors.primary),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

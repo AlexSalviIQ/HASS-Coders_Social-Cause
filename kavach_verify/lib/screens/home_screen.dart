@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.photo_library_rounded,
                   label: 'Image / Video',
                   subtitle: 'Photos & clips',
-                  gradient: const [Color(0xFF2962FF), Color(0xFF448AFF)],
+                  gradient: const [Color(0xFF1565C0), Color(0xFF1E40AF)],
                   delay: 0,
                   onTap: () => _pickMediaOrVideo(context),
                 ),
@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.description_rounded,
                   label: 'Document Verify',
                   subtitle: 'PDFs & docs',
-                  gradient: const [Color(0xFF7C4DFF), Color(0xFFB388FF)],
+                  gradient: const [Color(0xFF1E40AF), Color(0xFF2563EB)],
                   delay: 80,
                   onTap: () => _pickDocument(context),
                 ),
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.badge_rounded,
                   label: 'Gov ID Check',
                   subtitle: 'ID verification',
-                  gradient: const [Color(0xFF00C853), Color(0xFF69F0AE)],
+                  gradient: const [Color(0xFF2563EB), Color(0xFF3B82F6)],
                   delay: 160,
                   onTap: () => _pickGovID(context),
                 ),
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.flag_rounded,
                   label: 'Report',
                   subtitle: 'Report fake content',
-                  gradient: const [Color(0xFFFF1744), Color(0xFFFF5252)],
+                  gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
                   delay: 240,
                   onTap: () => context.go('/report'),
                 ),
@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 4,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: AppColors.emeraldGreen,
+                    color: AppColors.primaryMuted,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -228,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _PickOption(
                   icon: Icons.camera_alt_rounded,
                   label: 'Camera',
-                  color: const Color(0xFF2962FF),
+                  color: const Color(0xFF1E40AF),
                   onTap: () async {
                     Navigator.pop(ctx);
                     final file = await ImagePicker().pickImage(
@@ -250,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _PickOption(
                   icon: Icons.photo_library_rounded,
                   label: 'Gallery',
-                  color: const Color(0xFF00C853),
+                  color: const Color(0xFF2563EB),
                   onTap: () async {
                     Navigator.pop(ctx);
                     final file = await ImagePicker().pickImage(
@@ -272,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _PickOption(
                   icon: Icons.videocam_rounded,
                   label: 'Video',
-                  color: const Color(0xFFFF1744),
+                  color: const Color(0xFF3B82F6),
                   onTap: () async {
                     Navigator.pop(ctx);
                     final file = await ImagePicker().pickVideo(
@@ -359,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _PickOption(
                           icon: Icons.camera_alt_rounded,
                           label: 'Capture ID',
-                          color: const Color(0xFF00C853),
+                          color: const Color(0xFF2563EB),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
@@ -381,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _PickOption(
                           icon: Icons.upload_file_rounded,
                           label: 'Upload ID',
-                          color: const Color(0xFF7C4DFF),
+                          color: const Color(0xFF0EA5E9),
                           onTap: () async {
                             Navigator.pop(ctx);
                             final file = await ImagePicker().pickImage(
@@ -553,17 +553,17 @@ class _DetectionFeedCard extends StatelessWidget {
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
-        return const Color(0xFF2962FF);
+        return AppColors.catText;
       case 'image':
-        return const Color(0xFFFF5252);
+        return AppColors.catImage;
       case 'video':
-        return const Color(0xFF00C853);
+        return AppColors.catVideo;
       case 'voice':
-        return const Color(0xFF7C4DFF);
+        return AppColors.catVoice;
       case 'document':
-        return const Color(0xFF7C4DFF);
+        return AppColors.catDocument;
       case 'link':
-        return const Color(0xFFF59E0B);
+        return AppColors.catLink;
       default:
         return AppColors.danger;
     }

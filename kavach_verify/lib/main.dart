@@ -61,7 +61,7 @@ class _KavachVerifyAppState extends State<KavachVerifyApp> {
         final deviceChild = DevicePreview.appBuilder(context, child);
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
-          color: isDark ? const Color(0xFF0D1117) : const Color(0xFFE8EDF3),
+          color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF3F4F6),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
@@ -208,7 +208,7 @@ class _KavachSplashState extends State<_KavachSplash>
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF1A237E),
+                                color: Color(0xFF1565C0),
                                 letterSpacing: -0.5,
                                 height: 1.0,
                               ),
@@ -231,7 +231,7 @@ class _KavachSplashState extends State<_KavachSplash>
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF388E3C),
+                                      color: Color(0xFF3B82F6),
                                       letterSpacing: -0.3,
                                       height: 1.0,
                                     ),

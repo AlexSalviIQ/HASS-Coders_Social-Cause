@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenH = MediaQuery.of(context).size.height;
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: isDark ? AppColors.darkSurface : const Color(0xFFF5F7FA),
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.offWhite,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

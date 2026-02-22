@@ -209,28 +209,28 @@ class WhatsAppBotScreen extends StatelessWidget {
                   icon: Icons.image_search_rounded,
                   title: 'Verify Images & Videos',
                   subtitle: 'Send media to detect deepfakes & manipulations',
-                  color: const Color(0xFF2962FF),
+                  color: const Color(0xFF1E40AF),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.description_rounded,
                   title: 'Analyze Documents',
                   subtitle: 'Forward PDFs & docs for authenticity checks',
-                  color: const Color(0xFF7C4DFF),
+                  color: const Color(0xFF2563EB),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.record_voice_over_rounded,
                   title: 'Audio Analysis',
                   subtitle: 'Send voice notes to detect AI-generated speech',
-                  color: const Color(0xFFFF6D00),
+                  color: const Color(0xFF3B82F6),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.speed_rounded,
                   title: 'Instant Results',
                   subtitle: 'Get a detailed verification report in seconds',
-                  color: const Color(0xFF00C853),
+                  color: const Color(0xFF0EA5E9),
                   isDark: isDark,
                 ),
               ],
@@ -248,7 +248,7 @@ class WhatsAppBotScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark
                     ? AppColors.darkBorder.withValues(alpha: 0.4)
-                    : const Color(0xFFF5F7FA),
+                    : AppColors.offWhite,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(

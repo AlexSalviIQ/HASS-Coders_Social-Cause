@@ -170,17 +170,17 @@ class _LibraryCard extends StatelessWidget {
   Color get _categoryColor {
     switch (item.category) {
       case 'text':
-        return const Color(0xFF2962FF);
+        return AppColors.catText;
       case 'image':
-        return const Color(0xFFFF5252);
+        return AppColors.catImage;
       case 'video':
-        return const Color(0xFF00C853);
+        return AppColors.catVideo;
       case 'voice':
-        return const Color(0xFF7C4DFF);
+        return AppColors.catVoice;
       case 'document':
-        return const Color(0xFF8B5CF6);
+        return AppColors.catDocument;
       case 'link':
-        return const Color(0xFFF59E0B);
+        return AppColors.catLink;
       default:
         return AppColors.danger;
     }

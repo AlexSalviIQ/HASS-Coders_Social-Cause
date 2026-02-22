@@ -21,7 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String _email;
   String _phone = '+91 98765 43210';
   String _bio = 'Digital truth seeker • Fighting misinformation';
-  String? _profileImagePath;
+
   bool _notificationsEnabled = true;
 
   // Activity history
@@ -30,42 +30,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'action': 'Verified an image',
       'result': 'Detected as Manipulated',
       'icon': Icons.image_rounded,
-      'color': Color(0xFFEF5350),
+      'color': AppColors.catImage,
       'time': '2 hours ago',
     },
     {
       'action': 'Analyzed a document',
       'result': 'Authentic',
       'icon': Icons.description_rounded,
-      'color': Color(0xFF66BB6A),
+      'color': AppColors.catVideo,
       'time': '5 hours ago',
     },
     {
       'action': 'Verified a video',
       'result': 'Deepfake Detected',
       'icon': Icons.videocam_rounded,
-      'color': Color(0xFFEF5350),
+      'color': AppColors.catImage,
       'time': 'Yesterday',
     },
     {
       'action': 'Checked Gov ID',
       'result': 'Verified Authentic',
       'icon': Icons.badge_rounded,
-      'color': Color(0xFF66BB6A),
+      'color': AppColors.catVideo,
       'time': 'Yesterday',
     },
     {
       'action': 'Reported fake content',
       'result': 'Report Submitted',
       'icon': Icons.flag_rounded,
-      'color': Color(0xFFFFA726),
+      'color': AppColors.primaryMuted,
       'time': '2 days ago',
     },
     {
       'action': 'Analyzed voice message',
       'result': 'AI-Generated Voice',
       'icon': Icons.mic_rounded,
-      'color': Color(0xFFEF5350),
+      'color': AppColors.catImage,
       'time': '3 days ago',
     },
   ];
@@ -88,7 +88,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context);
+    final profileImagePath = auth.profileImagePath.isNotEmpty
+        ? auth.profileImagePath
+        : null;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -102,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      gradient: _profileImagePath == null
+                      gradient: profileImagePath == null
                           ? const LinearGradient(
                               colors: [
                                 AppColors.deepBlue,
@@ -119,11 +122,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    child: _profileImagePath != null
+                    child: profileImagePath != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(28),
                             child: Image.file(
-                              File(_profileImagePath!),
+                              File(profileImagePath),
                               width: 90,
                               height: 90,
                               fit: BoxFit.cover,
@@ -280,7 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: 'Rank',
                   value: auth.communityRank.split(' ').first,
                   icon: Icons.emoji_events_rounded,
-                  color: const Color(0xFFF39C12),
+                  color: AppColors.primary,
                   delay: 100,
                 ),
               ],
@@ -296,13 +299,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFFF39C12).withValues(alpha: 0.1),
-                    const Color(0xFFF39C12).withValues(alpha: 0.03),
+                    AppColors.primary.withValues(alpha: 0.1),
+                    AppColors.primary.withValues(alpha: 0.03),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFFF39C12).withValues(alpha: 0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -495,8 +498,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   maxHeight: 512,
                   imageQuality: 85,
                 );
-                if (photo != null) {
-                  setState(() => _profileImagePath = photo.path);
+                if (photo != null && mounted) {
+                  await Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  ).setProfileImage(photo.path);
                   _snack('Profile photo updated! 📸');
                 }
               },
@@ -516,22 +522,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   maxHeight: 512,
                   imageQuality: 85,
                 );
-                if (photo != null) {
-                  setState(() => _profileImagePath = photo.path);
+                if (photo != null && mounted) {
+                  await Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  ).setProfileImage(photo.path);
                   _snack('Profile photo updated! 🖼️');
                 }
               },
             ),
-            if (_profileImagePath != null) ...[
+            if (Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            ).profileImagePath.isNotEmpty) ...[
               const SizedBox(height: 8),
               _photoOption(
                 Icons.delete_rounded,
                 'Remove Photo',
                 AppColors.danger,
                 isDark,
-                () {
+                () async {
                   Navigator.pop(ctx);
-                  setState(() => _profileImagePath = null);
+                  await Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  ).setProfileImage('');
                   _snack('Profile photo removed');
                 },
               ),
@@ -919,7 +934,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         i < rating
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        color: const Color(0xFFF39C12),
+                        color: AppColors.primary,
                         size: 32,
                       ),
                     ),

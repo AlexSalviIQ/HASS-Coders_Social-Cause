@@ -140,7 +140,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 _ProofOption(
                   icon: Icons.description_rounded,
                   label: 'Document',
-                  color: const Color(0xFF8B5CF6),
+                  color: AppColors.primary,
                   onTap: () async {
                     Navigator.pop(ctx);
                     try {
@@ -319,7 +319,7 @@ class _ReportScreenState extends State<ReportScreen> {
           _UploadButton(
             label: 'Upload Document',
             icon: Icons.upload_file_rounded,
-            color: const Color(0xFF8B5CF6),
+            color: AppColors.primary,
             isDark: isDark,
             onTap: _pickDocumentation,
           ).animate().fadeIn(delay: 160.ms, duration: 300.ms),
@@ -394,7 +394,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+                                colors: [Color(0xFF1565C0), Color(0xFF1E40AF)],
                               ),
                               border: Border.all(
                                 color: isDark
@@ -617,7 +617,7 @@ class _FileChip extends StatelessWidget {
         children: [
           Icon(
             isPdf ? Icons.picture_as_pdf_rounded : Icons.description_rounded,
-            color: isPdf ? AppColors.danger : const Color(0xFF8B5CF6),
+            color: isPdf ? AppColors.danger : AppColors.primary,
             size: 18,
           ),
           const SizedBox(width: 6),
