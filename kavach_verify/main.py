@@ -187,13 +187,23 @@ def generate_awareness_message(topic_context):
     )
     return chat_completion.choices[0].message.content
 ## --- HELPER 2.5: VIDEO DEEPFAKE SCANNER (OMNI-MODAL) ---
+## --- HELPER 2.5: VIDEO DEEPFAKE SCANNER (OMNI-MODAL) ---
 def check_video_for_ai(video_path):
     print(f"🎥 Extracting frames from video: {video_path}")
     
-    # METHOD 1: Temporal Consistency (Look for face-swaps and morphs first)
+    # METHOD 1: Specialized Face-Swap Detection
+    face_status, face_log = check_face_deepfake(video_path)
+    
+    if face_status == "FAKE":
+        return ("FAKE", face_log)
+        
+    # 🚨 Ensure the face log prints even if the video continues to the next checks!
+    accumulated_log = face_log if face_log else ""
+
+    # METHOD 2: Temporal Consistency
     temporal_glitch = check_temporal_consistency(video_path)
     if temporal_glitch:
-        return ("FAKE", f"🔴 *HIGH RISK*: Temporal inconsistency detected! {temporal_glitch}")
+        return ("FAKE", f"{accumulated_log}🔴 *HIGH RISK*: Temporal inconsistency detected! {temporal_glitch}")
 
     # Proceed to Standard Frame Extraction
     vidcap = cv2.VideoCapture(video_path)
@@ -220,7 +230,7 @@ def check_video_for_ai(video_path):
             cv2.imwrite(temp_frame_path, image)
             print(f"🔍 Analyzing Frame {idx}...")
             
-            # METHOD 2: The Watermark Hunter
+            # METHOD 3: The Watermark Hunter
             detected_watermark = detect_video_watermark(temp_frame_path)
             if detected_watermark:
                 for mark in ai_watermarks:
@@ -228,9 +238,9 @@ def check_video_for_ai(video_path):
                         vidcap.release()
                         try: os.remove(temp_frame_path)
                         except: pass
-                        return ("FAKE", f"🔴 *HIGH RISK*: Video analysis complete. We detected a known AI-generator watermark ('{mark.upper()}') in the frames.")
+                        return ("FAKE", f"{accumulated_log}🔴 *HIGH RISK*: Video analysis complete. We detected a known AI-generator watermark ('{mark.upper()}') in the frames.")
 
-            # METHOD 3: Pixel-Level AI Check 
+            # METHOD 4: Pixel-Level AI Check 
             category, verdict_msg = check_image_for_ai(temp_frame_path)
             if category == "FAKE":
                 try:
@@ -246,9 +256,9 @@ def check_video_for_ai(video_path):
     vidcap.release()
     
     if highest_fake_confidence > 0:
-        return ("FAKE", f"🔴 *HIGH RISK*: Video analysis complete. We detected manipulated AI pixels with {highest_fake_confidence}% certainty.")
+        return ("FAKE", f"{accumulated_log}🔴 *HIGH RISK*: Video analysis complete. We detected manipulated AI pixels with {highest_fake_confidence}% certainty.")
     else:
-        return ("REAL", "🟢 *VERIFIED SAFE*: Video analysis complete. No temporal morphing, watermarks, or manipulated pixels detected.")
+        return ("REAL", f"{accumulated_log}🟢 *VERIFIED SAFE*: Video analysis complete. No temporal morphing, watermarks, or manipulated pixels detected.")
 # --- HELPER 2.6: WATERMARK HUNTER ---
 def detect_video_watermark(image_path):
     print("👁️ Inspecting frame corners for AI watermarks...")
@@ -638,6 +648,74 @@ def generate_formal_report_content(user_query, raw_verdict):
     except Exception as e:
         print(f"❌ AI Report Generation Error: {e}")
         return None
+
+# --- HELPER 2.8: ADVANCED FACE-SWAP DEEPFAKE DETECTOR ---
+HF_FACE_MODEL_URL = "https://router.huggingface.co/hf-inference/models/dima806/deepfake_vs_real_image_detection"
+
+def check_face_deepfake(video_path):
+    print("🕵️‍♂️ Running Specialized Face-Swap Detection...")
+    action_log = "" # 🚨 NEW: Accumulate the log messages here!
+    
+    try:
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        vidcap = cv2.VideoCapture(video_path)
+        total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        if total_frames == 0:
+            return "CLEAN", ""
+            
+        frame_indices = [int(total_frames * 0.3), int(total_frames * 0.5), int(total_frames * 0.7)]
+        
+        for idx in frame_indices:
+            vidcap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+            success, image = vidcap.read()
+            
+            if success:
+                gray_frame = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(100, 100))
+                
+                for (x, y, w, h) in faces:
+                    # 🚨 NEW: Add the message to the log!
+                    log_line = f"👤 Face found at frame {idx}! Analyzing for Deepfake morphing...\n"
+                    print(log_line.strip())
+                    action_log += log_line
+                    
+                    margin = int(h * 0.1)
+                    y1 = max(0, y - margin)
+                    y2 = min(image.shape[0], y + h + margin)
+                    x1 = max(0, x - margin)
+                    x2 = min(image.shape[1], x + w + margin)
+                    
+                    face_crop = image[y1:y2, x1:x2]
+                    crop_path = f"temp_face_crop_{idx}.jpg"
+                    cv2.imwrite(crop_path, face_crop)
+                    
+                    with open(crop_path, "rb") as f:
+                        response = requests.post(HF_FACE_MODEL_URL, headers=headers, data=f.read())
+                    
+                    try: os.remove(crop_path)
+                    except: pass
+                    
+                    if response.status_code == 200:
+                        results = response.json()
+                        if isinstance(results, list) and len(results) > 0:
+                            results.sort(key=lambda x: x['score'], reverse=True)
+                            top_result = results[0]
+                            label = top_result['label'].lower()
+                            conf = top_result['score']
+                            
+                            if 'fake' in label and conf > 0.65:
+                                vidcap.release()
+                                # Return FAKE with the accumulated logs attached!
+                                return ("FAKE", f"{action_log}🔴 *HIGH RISK*: Advanced Face-Swap detected. Specialized facial analysis reveals AI-morphed pixels with {round(conf*100, 2)}% certainty.")
+                                
+        vidcap.release()
+        # Return CLEAN with the logs if no deepfake was found, so it prints on real videos too!
+        return ("CLEAN", action_log) 
+        
+    except Exception as e:
+        print(f"❌ Face Analysis Error: {e}")
+        return ("CLEAN", "")
 
 #
 

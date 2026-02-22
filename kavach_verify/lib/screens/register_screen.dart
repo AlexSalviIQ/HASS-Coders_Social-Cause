@@ -65,17 +65,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenH = MediaQuery.of(context).size.height;
+    final topPadding = MediaQuery.of(context).padding.top;
+    // Read viewInsets from THIS context (above Scaffold) - the real value
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       backgroundColor: isDark ? AppColors.darkSurface : AppColors.offWhite,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.only(left: 28, right: 28, top: topPadding),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: BoxConstraints(
+                maxWidth: 420,
+                // Only enforce minHeight when keyboard is closed (for centering)
+                // When keyboard is open, let content shrink-wrap = no bottom gap
+                minHeight: keyboardOpen
+                    ? 0
+                    : constraints.maxHeight - topPadding,
+              ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                // Center when keyboard closed, start (top) when keyboard open
+                mainAxisAlignment: keyboardOpen
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.center,
                 children: [
                   SizedBox(height: screenH * 0.03),
                   // Logo
@@ -333,8 +347,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

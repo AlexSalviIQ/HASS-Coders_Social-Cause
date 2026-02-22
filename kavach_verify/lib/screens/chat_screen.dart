@@ -854,6 +854,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
           child: SafeArea(
             top: false,
+            bottom: false,
             child: Row(
               children: [
                 // Attach button – subtle, no colored background
