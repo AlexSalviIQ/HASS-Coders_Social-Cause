@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -57,13 +58,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _error = err;
       });
     } else {
-      context.go('/home');
+      if (!mounted) return;
+      context.go('/login', extra: {'showSuccess': true});
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     final screenH = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
     // Read viewInsets from THIS context (above Scaffold) - the real value
@@ -112,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                   const SizedBox(height: 14),
                   Text(
-                    'Create Account',
+                    lang.tr('create_account'),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -122,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
                   const SizedBox(height: 4),
                   Text(
-                    'Join KavachVerify to fight misinformation',
+                    lang.tr('join_shield'),
                     style: TextStyle(fontSize: 12, color: AppColors.mediumGrey),
                   ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                   const SizedBox(height: 24),
@@ -176,7 +179,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                           _buildField(
                             controller: _emailController,
-                            label: 'Email',
+                            label: lang.tr('email'),
                             icon: Icons.email_outlined,
                             isDark: isDark,
                             keyboardType: TextInputType.emailAddress,
@@ -193,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 12),
                           _buildField(
                             controller: _phoneController,
-                            label: 'Phone Number',
+                            label: lang.tr('phone_number'),
                             icon: Icons.phone_outlined,
                             isDark: isDark,
                             keyboardType: TextInputType.phone,
@@ -210,7 +213,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 12),
                           _buildField(
                             controller: _usernameController,
-                            label: 'Username',
+                            label: lang.tr('username'),
                             icon: Icons.person_outline_rounded,
                             isDark: isDark,
                             validator: (v) {
@@ -226,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 12),
                           _buildField(
                             controller: _passwordController,
-                            label: 'Password',
+                            label: lang.tr('password'),
                             icon: Icons.lock_outline_rounded,
                             isDark: isDark,
                             obscure: _obscurePassword,
@@ -255,7 +258,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 12),
                           _buildField(
                             controller: _confirmController,
-                            label: 'Confirm Password',
+                            label: lang.tr('confirm_password'),
                             icon: Icons.lock_outline_rounded,
                             isDark: isDark,
                             obscure: _obscureConfirm,
@@ -303,8 +306,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text(
-                                      'Create Account',
+                                  : Text(
+                                      lang.tr('create_account'),
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
@@ -322,7 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account? ',
+                        lang.tr('already_have_account'),
                         style: TextStyle(
                           color: AppColors.mediumGrey,
                           fontSize: 13,
@@ -331,7 +334,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       GestureDetector(
                         onTap: () => context.go('/login'),
                         child: Text(
-                          'Sign In',
+                          lang.tr('sign_in'),
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.deepBlueLight

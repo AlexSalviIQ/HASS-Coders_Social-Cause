@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -54,6 +55,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   void _pickProof() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -77,7 +79,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'Add Proof',
+              lang.tr('add_proof'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -90,7 +92,7 @@ class _ReportScreenState extends State<ReportScreen> {
               children: [
                 _ProofOption(
                   icon: Icons.photo_library_rounded,
-                  label: 'Image',
+                  label: lang.tr('image'),
                   color: AppColors.deepBlue,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -115,7 +117,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 _ProofOption(
                   icon: Icons.videocam_rounded,
-                  label: 'Video',
+                  label: lang.tr('video'),
                   color: AppColors.danger,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -139,7 +141,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 _ProofOption(
                   icon: Icons.description_rounded,
-                  label: 'Document',
+                  label: lang.tr('document'),
                   color: AppColors.primary,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -186,10 +188,11 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   void _submit() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     if (_descController.text.trim().isEmpty &&
         _documentation.isEmpty &&
         _proof.isEmpty) {
-      _snack('Please add a description or upload proof');
+      _snack(lang.tr('add_desc_or_proof'));
       return;
     }
     setState(() => _isSubmitting = true);
@@ -206,14 +209,14 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _isSubmitting = false);
 
     if (result['status'] == 'success') {
-      _snack('Report submitted successfully! 🛡️');
+      _snack(lang.tr('report_success'));
       _descController.clear();
       setState(() {
         _documentation.clear();
         _proof.clear();
       });
     } else {
-      _snack(result['message'] ?? 'Failed to submit report');
+      _snack(result['message'] ?? lang.tr('report_failed'));
     }
   }
 
@@ -231,6 +234,7 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
@@ -239,7 +243,7 @@ class _ReportScreenState extends State<ReportScreen> {
         children: [
           // Header
           Text(
-            'Report Fake Content',
+            lang.tr('report_fake_title'),
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -248,7 +252,7 @@ class _ReportScreenState extends State<ReportScreen> {
           ).animate().fadeIn(duration: 300.ms),
           const SizedBox(height: 4),
           Text(
-            'Help us fight misinformation by reporting suspicious content',
+            lang.tr('report_subtitle'),
             style: TextStyle(
               fontSize: 13,
               color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -257,7 +261,7 @@ class _ReportScreenState extends State<ReportScreen> {
           const SizedBox(height: 24),
 
           // Description field
-          _sectionLabel('Description', isDark),
+          _sectionLabel(lang.tr('description'), isDark),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
@@ -276,7 +280,7 @@ class _ReportScreenState extends State<ReportScreen> {
               maxLines: 4,
               minLines: 3,
               decoration: InputDecoration(
-                hintText: 'Describe the fake content you want to report...',
+                hintText: lang.tr('describe_fake_content'),
                 hintStyle: TextStyle(color: AppColors.mediumGrey, fontSize: 13),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(14),
@@ -290,10 +294,10 @@ class _ReportScreenState extends State<ReportScreen> {
           const SizedBox(height: 24),
 
           // Documentation section
-          _sectionLabel('Documentation', isDark),
+          _sectionLabel(lang.tr('documentation'), isDark),
           const SizedBox(height: 4),
           Text(
-            'Upload supporting documents (PDFs, Word docs, etc.)',
+            lang.tr('upload_docs_hint'),
             style: TextStyle(
               fontSize: 11,
               color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -317,7 +321,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
           if (_documentation.isNotEmpty) const SizedBox(height: 10),
           _UploadButton(
-            label: 'Upload Document',
+            label: lang.tr('upload_document'),
             icon: Icons.upload_file_rounded,
             color: AppColors.primary,
             isDark: isDark,
@@ -326,10 +330,10 @@ class _ReportScreenState extends State<ReportScreen> {
           const SizedBox(height: 24),
 
           // Proof section
-          _sectionLabel('Proof', isDark),
+          _sectionLabel(lang.tr('proof'), isDark),
           const SizedBox(height: 4),
           Text(
-            'Upload images, videos, or documents as evidence',
+            lang.tr('upload_proof_hint'),
             style: TextStyle(
               fontSize: 11,
               color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -459,7 +463,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
           if (_proof.isNotEmpty) const SizedBox(height: 10),
           _UploadButton(
-            label: 'Add Proof',
+            label: lang.tr('add_proof'),
             icon: Icons.add_photo_alternate_rounded,
             color: AppColors.deepBlue,
             isDark: isDark,
@@ -490,13 +494,13 @@ class _ReportScreenState extends State<ReportScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.send_rounded, size: 18),
                         SizedBox(width: 8),
                         Text(
-                          'Submit Report',
+                          lang.tr('submit_report'),
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,

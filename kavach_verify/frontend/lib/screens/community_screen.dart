@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -39,6 +40,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final lang = Provider.of<LanguageProvider>(context);
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -80,7 +82,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       Text(
                         auth.communityRank.isNotEmpty
                             ? auth.communityRank
-                            : 'Fact Checker',
+                            : lang.tr('fact_checker'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -89,7 +91,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${auth.totalVerified} verifications • ${_stats['accuracy_score'] ?? 95}% accuracy',
+                        '${auth.totalVerified} ${lang.tr('verifications')} • ${_stats['accuracy_score'] ?? 95}% ${lang.tr('accuracy')}',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 12,
@@ -108,7 +110,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    'Top 5%',
+                    lang.tr('top_5_percent'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 11,
@@ -125,7 +127,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             child: Row(
               children: [
                 _PointCard(
-                  label: 'Text Checks',
+                  label: lang.tr('text_checks'),
                   points: '${_stats['text_checks'] ?? 0}',
                   icon: Icons.text_fields_rounded,
                   color: const Color(0xFF5B7DB1),
@@ -133,7 +135,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 const SizedBox(width: 10),
                 _PointCard(
-                  label: 'Media Checks',
+                  label: lang.tr('media_checks'),
                   points: '${_stats['media_checks'] ?? 0}',
                   icon: Icons.image_rounded,
                   color: const Color(0xFFD4714E),
@@ -141,7 +143,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 const SizedBox(width: 10),
                 _PointCard(
-                  label: 'Doc Checks',
+                  label: lang.tr('doc_checks'),
                   points: '${_stats['doc_checks'] ?? 0}',
                   icon: Icons.description_rounded,
                   color: const Color(0xFF7B68AE),
@@ -166,7 +168,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Safety Guidelines',
+                  lang.tr('safety_guidelines'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -179,57 +181,57 @@ class _CommunityScreenState extends State<CommunityScreen> {
           _guideline(
             isDark,
             '🔍',
-            'Verify Before Sharing',
-            'Always fact-check information through multiple credible sources before forwarding messages, posts, or news to others.',
+            lang.tr('guideline_1_title'),
+            lang.tr('guideline_1_desc'),
             0,
           ),
           _guideline(
             isDark,
             '🔗',
-            'Check URLs Carefully',
-            'Look for misspellings in domain names, missing HTTPS, and unusual domain extensions. Hover over links before clicking.',
+            lang.tr('guideline_2_title'),
+            lang.tr('guideline_2_desc'),
             1,
           ),
           _guideline(
             isDark,
             '🖼️',
-            'Reverse Image Search',
-            'Use Google Reverse Image Search to check if photos have been manipulated or taken out of context from older events.',
+            lang.tr('guideline_3_title'),
+            lang.tr('guideline_3_desc'),
             2,
           ),
           _guideline(
             isDark,
             '🎙️',
-            'Be Wary of Audio Clips',
-            'AI-generated voice clones are increasingly realistic. Verify audio claims through official channels before believing them.',
+            lang.tr('guideline_4_title'),
+            lang.tr('guideline_4_desc'),
             3,
           ),
           _guideline(
             isDark,
             '📄',
-            'Inspect Documents',
-            'Check official documents for proper letterheads, file numbers, consistent fonts, and valid digital signatures.',
+            lang.tr('guideline_5_title'),
+            lang.tr('guideline_5_desc'),
             4,
           ),
           _guideline(
             isDark,
             '🎥',
-            'Spot Deepfake Videos',
-            'Look for unnatural blinking, lip-sync issues, blurry edges around faces, and inconsistent lighting in video content.',
+            lang.tr('guideline_6_title'),
+            lang.tr('guideline_6_desc'),
             5,
           ),
           _guideline(
             isDark,
             '🚫',
-            'Don\'t Spread Panic',
-            'If content evokes extreme emotion (fear, anger, outrage), it\'s more likely to be designed to manipulate. Pause and verify.',
+            lang.tr('guideline_7_title'),
+            lang.tr('guideline_7_desc'),
             6,
           ),
           _guideline(
             isDark,
             '📱',
-            'Use KavachVerify',
-            'Submit any suspicious content to KavachVerify for AI-powered analysis. Be part of the solution against misinformation.',
+            lang.tr('guideline_8_title'),
+            lang.tr('guideline_8_desc'),
             7,
           ),
           const SizedBox(height: 24),

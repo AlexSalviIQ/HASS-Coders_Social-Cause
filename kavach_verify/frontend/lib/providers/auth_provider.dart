@@ -66,9 +66,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Try to auto-login from saved credentials (Remember Me).
+  Future<bool> tryAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUser = prefs.getString('remember_user');
+    final savedPass = prefs.getString('remember_pass');
+    if (savedUser == null || savedPass == null) return false;
+    final err = await login(savedUser, savedPass);
+    return err == null;
+  }
+
   /// Login with email/username and password.
   /// Returns null on success, or an error string on failure.
-  Future<String?> login(String emailOrUsername, String password) async {
+  Future<String?> login(
+    String emailOrUsername,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     final result = await ApiService.login(
       emailOrUsername: emailOrUsername,
       password: password,
@@ -78,6 +92,11 @@ class AuthProvider extends ChangeNotifier {
       _setUserFromMap(result['user']);
       _isAuthenticated = true;
       await _loadProfileImage();
+      if (rememberMe) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('remember_user', emailOrUsername);
+        await prefs.setString('remember_pass', password);
+      }
       notifyListeners();
       return null;
     }
@@ -86,6 +105,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// Register with email, username, and password.
   /// Returns null on success, or an error string on failure.
+  /// Does NOT auto-login — caller should redirect to sign-in page.
   Future<String?> register(
     String email,
     String username,
@@ -98,17 +118,13 @@ class AuthProvider extends ChangeNotifier {
     );
 
     if (result['status'] == 'success') {
-      _setUserFromMap(result['user']);
-      _isAuthenticated = true;
-      await _loadProfileImage();
-      notifyListeners();
       return null;
     }
     return result['message'] ?? 'Registration failed';
   }
 
-  /// Logout - clears all user data.
-  void logout() {
+  /// Logout - clears all user data and remembered credentials.
+  Future<void> logout() async {
     _isAuthenticated = false;
     _userId = '';
     _username = '';
@@ -120,6 +136,9 @@ class AuthProvider extends ChangeNotifier {
     _totalVerified = 0;
     _accuracyScore = 0.0;
     _communityRank = 'Beginner';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('remember_user');
+    await prefs.remove('remember_pass');
     notifyListeners();
   }
 

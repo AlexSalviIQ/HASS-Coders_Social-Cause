@@ -1,25 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:provider/provider.dart';
 
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/language_provider.dart';
 import 'router.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    DevicePreview(
-      enabled: true,
-      builder: (context) => MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
-          ChangeNotifierProvider(create: (ctx) => AuthProvider()),
-        ],
-        child: const KavachVerifyApp(),
-      ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (ctx) => ThemeProvider()),
+        ChangeNotifierProvider(create: (ctx) => AuthProvider()),
+        ChangeNotifierProvider(create: (ctx) => LanguageProvider()),
+      ],
+      child: const KavachVerifyApp(),
     ),
   );
 }
@@ -56,16 +54,15 @@ class _KavachVerifyAppState extends State<KavachVerifyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
       routerConfig: _router,
-      locale: DevicePreview.locale(context),
+
       builder: (context, child) {
-        final deviceChild = DevicePreview.appBuilder(context, child);
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF3F4F6),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: _SplashGate(child: deviceChild),
+              child: _SplashGate(child: child ?? const SizedBox.shrink()),
             ),
           ),
         );
@@ -87,9 +84,16 @@ class _SplashGateState extends State<_SplashGate> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 4000), () {
-      if (mounted) setState(() => _showSplash = false);
-    });
+    _init();
+  }
+
+  Future<void> _init() async {
+    // Try auto-login from remembered credentials during splash
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    await auth.tryAutoLogin();
+    // Wait for splash animation to finish
+    await Future.delayed(const Duration(milliseconds: 4000));
+    if (mounted) setState(() => _showSplash = false);
   }
 
   @override

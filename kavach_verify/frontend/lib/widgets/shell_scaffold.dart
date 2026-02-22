@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../providers/language_provider.dart';
 
 class ShellScaffold extends StatefulWidget {
   final Widget child;
@@ -35,25 +37,26 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     });
   }
 
-  String get _currentPageName {
+  String _currentPageName(LanguageProvider lang) {
     switch (widget.currentPath) {
       case '/home':
-        return 'Home';
+        return lang.tr('nav_home');
       case '/chat':
-        return 'Chat';
+        return lang.tr('nav_chat');
       case '/library':
-        return 'Library';
+        return lang.tr('nav_library');
       case '/whatsapp':
-        return 'WhatsApp Bot';
+        return lang.tr('nav_whatsapp');
       case '/profile':
-        return 'Profile';
+        return lang.tr('nav_profile');
       case '/community':
-        return 'Community';
+        return lang.tr('nav_community');
       case '/report':
-        return 'Report';
+        return lang.tr('nav_report');
       default:
-        if (widget.currentPath.startsWith('/library/detail')) return 'Details';
-        return 'Home';
+        if (widget.currentPath.startsWith('/library/detail'))
+          return lang.tr('nav_details');
+        return lang.tr('nav_home');
     }
   }
 
@@ -62,6 +65,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return PopScope(
       canPop: _isHome,
       onPopInvokedWithResult: (didPop, result) {
@@ -74,7 +78,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
       child: Scaffold(
         key: _scaffoldKey,
         resizeToAvoidBottomInset: true,
-        drawer: _buildDrawer(context, isDark),
+        drawer: _buildDrawer(context, isDark, lang),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Container(
@@ -187,7 +191,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                                   ],
                                 ),
                                 Text(
-                                  _currentPageName,
+                                  _currentPageName(lang),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.65),
                                     fontSize: 10,
@@ -233,7 +237,11 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, bool isDark) {
+  Widget _buildDrawer(
+    BuildContext context,
+    bool isDark,
+    LanguageProvider lang,
+  ) {
     return Drawer(
       width: 275,
       child: Container(
@@ -273,7 +281,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                     ).animate().fadeIn(duration: 300.ms),
                     const SizedBox(height: 6),
                     Text(
-                      'Truth Shield for the Digital Age',
+                      lang.tr('tagline'),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 11,
@@ -289,39 +297,45 @@ class _ShellScaffoldState extends State<ShellScaffold> {
                   child: Column(
                     children: [
                       const SizedBox(height: 6),
-                      _navItem(context, Icons.home_rounded, 'Home', '/home', 0),
+                      _navItem(
+                        context,
+                        Icons.home_rounded,
+                        lang.tr('nav_home'),
+                        '/home',
+                        0,
+                      ),
                       _navItem(
                         context,
                         Icons.smart_toy_rounded,
-                        'WhatsApp Bot',
+                        lang.tr('nav_whatsapp'),
                         '/whatsapp',
                         40,
                       ),
                       _navItem(
                         context,
                         Icons.library_books_rounded,
-                        'Library',
+                        lang.tr('nav_library'),
                         '/library',
                         80,
                       ),
                       _navItem(
                         context,
                         Icons.people_rounded,
-                        'Community',
+                        lang.tr('nav_community'),
                         '/community',
                         120,
                       ),
                       _navItem(
                         context,
                         Icons.flag_rounded,
-                        'Report',
+                        lang.tr('nav_report'),
                         '/report',
                         160,
                       ),
                       _navItem(
                         context,
                         Icons.person_rounded,
-                        'Profile',
+                        lang.tr('nav_profile'),
                         '/profile',
                         200,
                       ),

@@ -17,6 +17,7 @@ import '../theme/app_theme.dart';
 import '../models/detection_item.dart';
 import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String? initialAttachmentPath;
@@ -281,6 +282,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<void> _pickMediaOrVideo() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -304,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 18),
             Text(
-              'Image / Video',
+              lang.tr('image_video_title'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -317,7 +319,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               children: [
                 _AttachOption(
                   icon: Icons.camera_alt_rounded,
-                  label: 'Camera',
+                  label: lang.tr('camera'),
                   color: AppColors.deepBlue,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -330,13 +332,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _stageAttachment(f.path, 'image', f.name);
                       }
                     } catch (e) {
-                      _snack('Camera unavailable');
+                      _snack(lang.tr('camera_unavailable'));
                     }
                   },
                 ),
                 _AttachOption(
                   icon: Icons.photo_library_rounded,
-                  label: 'Gallery',
+                  label: lang.tr('gallery'),
                   color: AppColors.emeraldGreen,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -349,13 +351,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _stageAttachment(f.path, 'image', f.name);
                       }
                     } catch (e) {
-                      _snack('Cannot access gallery');
+                      _snack(lang.tr('cannot_access_gallery'));
                     }
                   },
                 ),
                 _AttachOption(
                   icon: Icons.videocam_rounded,
-                  label: 'Video',
+                  label: lang.tr('video'),
                   color: AppColors.danger,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -367,7 +369,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         _stageAttachment(f.path, 'video', f.name);
                       }
                     } catch (e) {
-                      _snack('Cannot pick video');
+                      _snack(lang.tr('cannot_pick_video'));
                     }
                   },
                 ),
@@ -380,6 +382,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _pickDocument() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -393,11 +396,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
       }
     } catch (e) {
-      _snack('Cannot pick document');
+      _snack(lang.tr('cannot_pick_document'));
     }
   }
 
   Future<void> _toggleVoiceRecording() async {
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     if (_isRecording) {
       // Stop recording
       _recordingTimer?.cancel();
@@ -417,7 +421,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         }
       } catch (e) {
         setState(() => _isRecording = false);
-        _snack('Recording failed');
+        _snack(lang.tr('recording_failed'));
       }
     } else {
       // Start recording
@@ -453,10 +457,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             }
           });
         } else {
-          _snack('Microphone permission denied');
+          _snack(lang.tr('microphone_denied'));
         }
       } catch (e) {
-        _snack('Cannot start recording: $e');
+        _snack('${lang.tr('cannot_start_recording')}: $e');
       }
     }
   }
@@ -474,6 +478,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   void _showAttachmentMenu() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -498,7 +503,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Attach Content',
+                      lang.tr('attach_content'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -511,7 +516,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       children: [
                         _AttachOption(
                           icon: Icons.photo_library_rounded,
-                          label: 'Image/Video',
+                          label: lang.tr('image_video_short'),
                           color: AppColors.deepBlue,
                           onTap: () {
                             Navigator.pop(ctx);
@@ -520,7 +525,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                         _AttachOption(
                           icon: Icons.description_rounded,
-                          label: 'Document',
+                          label: lang.tr('document'),
                           color: const Color(0xFF8B5CF6),
                           onTap: () {
                             Navigator.pop(ctx);
@@ -529,7 +534,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         ),
                         _AttachOption(
                           icon: Icons.badge_rounded,
-                          label: 'Gov ID',
+                          label: lang.tr('gov_id'),
                           color: AppColors.emeraldGreen,
                           onTap: () async {
                             Navigator.pop(ctx);
@@ -542,7 +547,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                 _stageAttachment(f.path, 'govid', f.name);
                               }
                             } catch (e) {
-                              _snack('Cannot pick file');
+                              _snack(lang.tr('cannot_pick_file'));
                             }
                           },
                         ),
@@ -560,6 +565,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return Column(
       children: [
         Expanded(
@@ -598,7 +604,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     .fadeIn(duration: 500.ms),
                 const SizedBox(width: 10),
                 Text(
-                  'Recording... ${_recordingSeconds}s',
+                  '${lang.tr('recording_indicator')} ${_recordingSeconds}s',
                   style: const TextStyle(
                     color: AppColors.danger,
                     fontWeight: FontWeight.w600,
@@ -607,7 +613,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ),
                 const Spacer(),
                 Text(
-                  'Tap mic to stop',
+                  lang.tr('tap_mic_stop'),
                   style: TextStyle(
                     color: AppColors.danger.withValues(alpha: 0.6),
                     fontSize: 11,
@@ -894,7 +900,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     child: TextField(
                       controller: _textController,
                       decoration: InputDecoration(
-                        hintText: 'Message...',
+                        hintText: lang.tr('type_message'),
                         hintStyle: TextStyle(
                           color: AppColors.mediumGrey,
                           fontSize: 14,
@@ -1291,7 +1297,9 @@ class _ChatBubbleState extends State<_ChatBubble> {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Download failed: $e'),
+                                        content: Text(
+                                          '${Provider.of<LanguageProvider>(context, listen: false).tr('download_failed')}: $e',
+                                        ),
                                       ),
                                     );
                                   }
@@ -1301,7 +1309,12 @@ class _ChatBubbleState extends State<_ChatBubble> {
                                 Icons.picture_as_pdf_rounded,
                                 size: 16,
                               ),
-                              label: const Text('Download Report'),
+                              label: Text(
+                                Provider.of<LanguageProvider>(
+                                  context,
+                                  listen: false,
+                                ).tr('download_report'),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: isDark
                                     ? const Color(0xFF1E3A5F)
@@ -1353,7 +1366,12 @@ class _ChatBubbleState extends State<_ChatBubble> {
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Document received for analysis'),
+          content: Text(
+            Provider.of<LanguageProvider>(
+              context,
+              listen: false,
+            ).tr('doc_received'),
+          ),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -1370,7 +1388,12 @@ class _ChatBubbleState extends State<_ChatBubble> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Cannot open document'),
+            content: Text(
+              Provider.of<LanguageProvider>(
+                context,
+                listen: false,
+              ).tr('cannot_open_doc'),
+            ),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -1704,7 +1727,12 @@ class _ChatBubbleState extends State<_ChatBubble> {
       if (path.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('No recording to play'),
+            content: Text(
+              Provider.of<LanguageProvider>(
+                context,
+                listen: false,
+              ).tr('no_recording_play'),
+            ),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -1730,7 +1758,9 @@ class _ChatBubbleState extends State<_ChatBubble> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Playback error: $e'),
+            content: Text(
+              '${Provider.of<LanguageProvider>(context, listen: false).tr('playback_error')}: $e',
+            ),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -1759,7 +1789,13 @@ class _FullScreenImageViewer extends StatelessWidget {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Image Preview', style: TextStyle(fontSize: 16)),
+        title: Text(
+          Provider.of<LanguageProvider>(
+            context,
+            listen: false,
+          ).tr('image_preview'),
+          style: const TextStyle(fontSize: 16),
+        ),
       ),
       body: Center(
         child: InteractiveViewer(
@@ -1858,7 +1894,13 @@ class _FullScreenVideoViewerState extends State<_FullScreenVideoViewer> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Video Preview', style: TextStyle(fontSize: 16)),
+        title: Text(
+          Provider.of<LanguageProvider>(
+            context,
+            listen: false,
+          ).tr('video_preview'),
+          style: const TextStyle(fontSize: 16),
+        ),
       ),
       body: Center(
         child: _error != null

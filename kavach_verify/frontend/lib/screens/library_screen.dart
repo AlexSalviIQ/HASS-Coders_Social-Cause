@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/detection_item.dart';
 import '../services/api_service.dart';
+import '../providers/language_provider.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -57,6 +59,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     final items = _filteredItems;
     return Column(
       children: [
@@ -78,7 +81,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
               decoration: InputDecoration(
-                hintText: 'Search detections...',
+                hintText: lang.tr('search_detections'),
                 hintStyle: TextStyle(color: AppColors.mediumGrey, fontSize: 13),
                 prefixIcon: Icon(
                   Icons.search_rounded,
@@ -116,7 +119,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
             child: Text(
-              '${items.length} result${items.length != 1 ? 's' : ''} found',
+              '${items.length} ${items.length != 1 ? lang.tr('results_found') : lang.tr('result_found')}',
               style: TextStyle(fontSize: 11, color: AppColors.mediumGrey),
             ),
           ),
@@ -139,8 +142,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       const SizedBox(height: 8),
                       Text(
                         _searchQuery.isNotEmpty
-                            ? 'No results for "$_searchQuery"'
-                            : 'No detections yet',
+                            ? '${lang.tr('no_results_for')} "$_searchQuery"'
+                            : lang.tr('no_detections'),
                         style: TextStyle(
                           color: AppColors.mediumGrey,
                           fontSize: 13,
@@ -186,17 +189,37 @@ class _LibraryCard extends StatelessWidget {
     }
   }
 
-  String get _timeAgo {
+  String _timeAgo(LanguageProvider lang) {
     final diff = DateTime.now().difference(item.detectedAt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${diff.inDays ~/ 7}w ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}${lang.tr('time_m_ago')}';
+    if (diff.inHours < 24) return '${diff.inHours}${lang.tr('time_h_ago')}';
+    if (diff.inDays < 7) return '${diff.inDays}${lang.tr('time_d_ago')}';
+    return '${diff.inDays ~/ 7}${lang.tr('time_w_ago')}';
+  }
+
+  String _categoryLabel(LanguageProvider lang) {
+    switch (item.category) {
+      case 'text':
+        return lang.tr('cat_text');
+      case 'image':
+        return lang.tr('cat_image');
+      case 'video':
+        return lang.tr('cat_video');
+      case 'voice':
+        return lang.tr('cat_voice');
+      case 'document':
+        return lang.tr('cat_document');
+      case 'link':
+        return lang.tr('cat_link');
+      default:
+        return item.category;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return GestureDetector(
       onTap: () => context.go('/library/detail/${item.id}'),
       child: Container(
@@ -237,7 +260,7 @@ class _LibraryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.title,
+                        lang.trContent(item.title),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -248,7 +271,7 @@ class _LibraryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item.description,
+                        lang.trContent(item.description),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -289,7 +312,7 @@ class _LibraryCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              item.category,
+                              _categoryLabel(lang),
                               style: TextStyle(
                                 color: _categoryColor,
                                 fontSize: 9,
@@ -318,7 +341,7 @@ class _LibraryCard extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            _timeAgo,
+                            _timeAgo(lang),
                             style: const TextStyle(
                               color: AppColors.mediumGrey,
                               fontSize: 9,

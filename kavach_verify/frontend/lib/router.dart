@@ -29,12 +29,16 @@ GoRouter createRouter(AuthProvider auth) {
     routes: [
       GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const LoginScreen(),
-          transitionsBuilder: (context, anim, _, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final showSuccess = extra?['showSuccess'] == true;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: LoginScreen(showRegistrationSuccess: showSuccess),
+            transitionsBuilder: (context, anim, _, child) =>
+                FadeTransition(opacity: anim, child: child),
+          );
+        },
       ),
       GoRoute(
         path: '/register',

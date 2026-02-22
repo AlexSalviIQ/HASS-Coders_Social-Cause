@@ -3,9 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/detection_item.dart';
 import '../services/api_service.dart';
+import '../providers/language_provider.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -54,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 6),
             child: Text(
-              'Quick Access',
+              lang.tr('quick_access'),
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
@@ -65,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Pick a content type to verify',
+              lang.tr('pick_content_type'),
               style: TextStyle(
                 fontSize: 13,
                 color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -85,32 +88,32 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _QuickAccessCard(
                   icon: Icons.photo_library_rounded,
-                  label: 'Image / Video',
-                  subtitle: 'Photos & clips',
+                  label: lang.tr('image_video'),
+                  subtitle: lang.tr('photos_clips'),
                   gradient: const [Color(0xFF1565C0), Color(0xFF1E40AF)],
                   delay: 0,
                   onTap: () => _pickMediaOrVideo(context),
                 ),
                 _QuickAccessCard(
                   icon: Icons.description_rounded,
-                  label: 'Document Verify',
-                  subtitle: 'PDFs & docs',
+                  label: lang.tr('document_verify'),
+                  subtitle: lang.tr('pdfs_docs'),
                   gradient: const [Color(0xFF1E40AF), Color(0xFF2563EB)],
                   delay: 80,
                   onTap: () => _pickDocument(context),
                 ),
                 _QuickAccessCard(
                   icon: Icons.badge_rounded,
-                  label: 'Gov ID Check',
-                  subtitle: 'ID verification',
+                  label: lang.tr('gov_id_check'),
+                  subtitle: lang.tr('id_verification'),
                   gradient: const [Color(0xFF2563EB), Color(0xFF3B82F6)],
                   delay: 160,
                   onTap: () => _pickGovID(context),
                 ),
                 _QuickAccessCard(
                   icon: Icons.flag_rounded,
-                  label: 'Report',
-                  subtitle: 'Report fake content',
+                  label: lang.tr('report'),
+                  subtitle: lang.tr('report_fake_content'),
                   gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
                   delay: 240,
                   onTap: () => context.go('/report'),
@@ -133,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Latest Detections',
+                  lang.tr('latest_detections'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -144,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 TextButton(
                   onPressed: () => context.go('/library'),
                   child: Text(
-                    'View All',
+                    lang.tr('view_all'),
                     style: TextStyle(
                       color: AppColors.deepBlueLight,
                       fontWeight: FontWeight.w600,
@@ -166,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(32),
               child: Center(
                 child: Text(
-                  'No detections yet. Start verifying content!',
+                  lang.tr('no_detections'),
                   style: TextStyle(
                     color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
                     fontSize: 13,
@@ -191,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _pickMediaOrVideo(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -214,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'Image / Video',
+              lang.tr('image_video'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -227,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _PickOption(
                   icon: Icons.camera_alt_rounded,
-                  label: 'Camera',
+                  label: lang.tr('camera'),
                   color: const Color(0xFF1E40AF),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -249,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _PickOption(
                   icon: Icons.photo_library_rounded,
-                  label: 'Gallery',
+                  label: lang.tr('gallery'),
                   color: const Color(0xFF2563EB),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -271,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 _PickOption(
                   icon: Icons.videocam_rounded,
-                  label: 'Video',
+                  label: lang.tr('video'),
                   color: const Color(0xFF3B82F6),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -321,6 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _pickGovID(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -345,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Gov ID Check',
+                      lang.tr('gov_id_check'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -358,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _PickOption(
                           icon: Icons.camera_alt_rounded,
-                          label: 'Capture ID',
+                          label: lang.tr('capture_id'),
                           color: const Color(0xFF2563EB),
                           onTap: () async {
                             Navigator.pop(ctx);
@@ -380,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         _PickOption(
                           icon: Icons.upload_file_rounded,
-                          label: 'Upload ID',
+                          label: lang.tr('upload_id'),
                           color: const Color(0xFF0EA5E9),
                           onTap: () async {
                             Navigator.pop(ctx);
@@ -572,7 +577,8 @@ class _DetectionFeedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final timeAgo = _formatTimeAgo(item.detectedAt);
+    final lang = Provider.of<LanguageProvider>(context);
+    final timeAgo = _formatTimeAgo(item.detectedAt, lang);
     return GestureDetector(
       onTap: () => context.go('/library/detail/${item.id}'),
       child: Container(
@@ -611,7 +617,10 @@ class _DetectionFeedCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -622,8 +631,8 @@ class _DetectionFeedCard extends StatelessWidget {
                               color: AppColors.danger.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            child: const Text(
-                              '⚠ FAKE',
+                            child: Text(
+                              lang.tr('fake_badge'),
                               style: TextStyle(
                                 color: AppColors.danger,
                                 fontSize: 9,
@@ -631,7 +640,6 @@ class _DetectionFeedCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 7,
@@ -642,7 +650,7 @@ class _DetectionFeedCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text(
-                              item.category,
+                              _categoryLabel(lang),
                               style: TextStyle(
                                 color: _categoryColor,
                                 fontSize: 9,
@@ -650,7 +658,6 @@ class _DetectionFeedCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Spacer(),
                           Text(
                             timeAgo,
                             style: const TextStyle(
@@ -662,7 +669,7 @@ class _DetectionFeedCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        item.title,
+                        lang.trContent(item.title),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -673,7 +680,7 @@ class _DetectionFeedCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        item.description,
+                        lang.trContent(item.description),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -738,11 +745,30 @@ class _DetectionFeedCard extends StatelessWidget {
     );
   }
 
-  String _formatTimeAgo(DateTime dt) {
+  String _formatTimeAgo(DateTime dt, LanguageProvider lang) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}${lang.tr('time_m_ago')}';
+    if (diff.inHours < 24) return '${diff.inHours}${lang.tr('time_h_ago')}';
+    if (diff.inDays < 7) return '${diff.inDays}${lang.tr('time_d_ago')}';
     return DateFormat('MMM d').format(dt);
+  }
+
+  String _categoryLabel(LanguageProvider lang) {
+    switch (item.category) {
+      case 'text':
+        return lang.tr('cat_text');
+      case 'image':
+        return lang.tr('cat_image');
+      case 'video':
+        return lang.tr('cat_video');
+      case 'voice':
+        return lang.tr('cat_voice');
+      case 'document':
+        return lang.tr('cat_document');
+      case 'link':
+        return lang.tr('cat_link');
+      default:
+        return item.category;
+    }
   }
 }

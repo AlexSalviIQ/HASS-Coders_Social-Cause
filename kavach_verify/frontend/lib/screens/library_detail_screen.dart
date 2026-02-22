@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/detection_item.dart';
 import '../services/api_service.dart';
+import '../providers/language_provider.dart';
 import 'package:intl/intl.dart';
 
 class LibraryDetailScreen extends StatefulWidget {
@@ -68,6 +70,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -82,14 +85,14 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
               color: AppColors.mediumGrey,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Detection not found',
+            Text(
+              lang.tr('detection_not_found'),
               style: TextStyle(color: AppColors.mediumGrey),
             ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => context.go('/library'),
-              child: const Text('Back to Library'),
+              child: Text(lang.tr('back_to_library')),
             ),
           ],
         ),
@@ -151,8 +154,8 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                         color: AppColors.danger,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        '⚠ FAKE CONTENT',
+                      child: Text(
+                        lang.tr('fake_content_badge'),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -171,7 +174,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${(item!.confidenceScore * 100).toInt()}% confidence',
+                        '${(item!.confidenceScore * 100).toInt()}% ${lang.tr('confidence_pct')}',
                         style: TextStyle(
                           color: _catColor,
                           fontSize: 11,
@@ -183,7 +186,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  item!.title,
+                  lang.trContent(item!.title),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -235,7 +238,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Description',
+                  lang.tr('description'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -244,7 +247,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  item!.description,
+                  lang.trContent(item!.description),
                   style: TextStyle(
                     fontSize: 14,
                     color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -286,8 +289,8 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
-                        'Why It\'s Fake — AI Analysis',
+                      Text(
+                        lang.tr('why_fake_title'),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -297,7 +300,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    item!.analysisDetails,
+                    lang.trContent(item!.analysisDetails),
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? AppColors.mediumGrey : AppColors.darkGrey,
@@ -312,7 +315,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
             child: Text(
-              'Comments & Feedback',
+              lang.tr('comments_feedback'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -329,7 +332,7 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                   child: TextField(
                     controller: _commentController,
                     decoration: InputDecoration(
-                      hintText: 'Add a comment...',
+                      hintText: lang.tr('add_comment'),
                       hintStyle: TextStyle(
                         color: AppColors.mediumGrey,
                         fontSize: 13,
@@ -359,9 +362,9 @@ class _LibraryDetailScreenState extends State<LibraryDetailScreen> {
                     if (_commentController.text.trim().isNotEmpty) {
                       setState(() {
                         _comments.insert(0, {
-                          'user': 'You',
+                          'user': lang.tr('you'),
                           'comment': _commentController.text.trim(),
-                          'time': 'Just now',
+                          'time': lang.tr('just_now'),
                         });
                         _commentController.clear();
                       });

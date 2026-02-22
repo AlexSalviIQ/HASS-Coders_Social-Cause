@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,55 +21,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String _name;
   late String _email;
   String _phone = '+91 98765 43210';
-  String _bio = 'Digital truth seeker • Fighting misinformation';
+  String _bio = '';
 
   bool _notificationsEnabled = true;
 
   // Activity history
-  final List<Map<String, dynamic>> _activityHistory = [
-    {
-      'action': 'Verified an image',
-      'result': 'Detected as Manipulated',
-      'icon': Icons.image_rounded,
-      'color': AppColors.catImage,
-      'time': '2 hours ago',
-    },
-    {
-      'action': 'Analyzed a document',
-      'result': 'Authentic',
-      'icon': Icons.description_rounded,
-      'color': AppColors.catVideo,
-      'time': '5 hours ago',
-    },
-    {
-      'action': 'Verified a video',
-      'result': 'Deepfake Detected',
-      'icon': Icons.videocam_rounded,
-      'color': AppColors.catImage,
-      'time': 'Yesterday',
-    },
-    {
-      'action': 'Checked Gov ID',
-      'result': 'Verified Authentic',
-      'icon': Icons.badge_rounded,
-      'color': AppColors.catVideo,
-      'time': 'Yesterday',
-    },
-    {
-      'action': 'Reported fake content',
-      'result': 'Report Submitted',
-      'icon': Icons.flag_rounded,
-      'color': AppColors.primaryMuted,
-      'time': '2 days ago',
-    },
-    {
-      'action': 'Analyzed voice message',
-      'result': 'AI-Generated Voice',
-      'icon': Icons.mic_rounded,
-      'color': AppColors.catImage,
-      'time': '3 days ago',
-    },
-  ];
+  List<Map<String, dynamic>> _getActivityHistory(LanguageProvider langProv) {
+    return [
+      {
+        'action': langProv.tr('verified_image'),
+        'result': langProv.tr('detected_manipulated'),
+        'icon': Icons.image_rounded,
+        'color': AppColors.catImage,
+        'time': langProv.tr('time_2h_ago'),
+      },
+      {
+        'action': langProv.tr('analyzed_document'),
+        'result': langProv.tr('authentic'),
+        'icon': Icons.description_rounded,
+        'color': AppColors.catVideo,
+        'time': langProv.tr('time_5h_ago'),
+      },
+      {
+        'action': langProv.tr('verified_video'),
+        'result': langProv.tr('deepfake_detected'),
+        'icon': Icons.videocam_rounded,
+        'color': AppColors.catImage,
+        'time': langProv.tr('yesterday'),
+      },
+      {
+        'action': langProv.tr('checked_gov_id'),
+        'result': langProv.tr('verified_authentic'),
+        'icon': Icons.badge_rounded,
+        'color': AppColors.catVideo,
+        'time': langProv.tr('yesterday'),
+      },
+      {
+        'action': langProv.tr('reported_fake'),
+        'result': langProv.tr('report_submitted'),
+        'icon': Icons.flag_rounded,
+        'color': AppColors.primaryMuted,
+        'time': langProv.tr('time_2d_ago'),
+      },
+      {
+        'action': langProv.tr('analyzed_voice'),
+        'result': langProv.tr('ai_generated_voice'),
+        'icon': Icons.mic_rounded,
+        'color': AppColors.catImage,
+        'time': langProv.tr('time_3d_ago'),
+      },
+    ];
+  }
 
   @override
   void initState() {
@@ -89,6 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeProvider = Provider.of<ThemeProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
+    final lang = Provider.of<LanguageProvider>(context);
     final profileImagePath = auth.profileImagePath.isNotEmpty
         ? auth.profileImagePath
         : null;
@@ -214,28 +218,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
           const SizedBox(height: 18),
           // Account Info (moved up)
-          _SectionTitle(title: 'Account', isDark: isDark),
+          _SectionTitle(title: lang.tr('account'), isDark: isDark),
           _InfoTile(
             icon: Icons.person_rounded,
-            label: 'Username',
+            label: lang.tr('username'),
             value: _name,
             isDark: isDark,
           ),
           _InfoTile(
             icon: Icons.email_rounded,
-            label: 'Email',
+            label: lang.tr('email'),
             value: _email,
             isDark: isDark,
           ),
           _InfoTile(
             icon: Icons.phone_rounded,
-            label: 'Phone',
+            label: lang.tr('phone'),
             value: _phone,
             isDark: isDark,
           ),
           _InfoTile(
             icon: Icons.calendar_today_rounded,
-            label: 'Member Since',
+            label: lang.tr('member_since'),
             value: 'February 2026',
             isDark: isDark,
           ),
@@ -249,8 +253,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => _showEditProfileSheet(context, isDark),
                 icon: const Icon(Icons.edit_rounded, size: 16),
-                label: const Text(
-                  'Edit Profile',
+                label: Text(
+                  lang.tr('edit_profile'),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -272,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Row(
               children: [
                 _StatCard(
-                  label: 'Verified',
+                  label: lang.tr('verified'),
                   value: '${auth.totalVerified}',
                   icon: Icons.verified_rounded,
                   color: AppColors.emeraldGreen,
@@ -280,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(width: 10),
                 _StatCard(
-                  label: 'Rank',
+                  label: lang.tr('rank'),
                   value: auth.communityRank.split(' ').first,
                   icon: Icons.emoji_events_rounded,
                   color: AppColors.primary,
@@ -327,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         Text(
-                          'Top 5% of community verifiers',
+                          lang.tr('top_5_community'),
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark
@@ -345,8 +349,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 28),
 
           // Recent Activity
-          _SectionTitle(title: 'Recent Activity', isDark: isDark),
-          ..._activityHistory.asMap().entries.map((entry) {
+          _SectionTitle(title: lang.tr('recent_activity'), isDark: isDark),
+          ..._getActivityHistory(lang).asMap().entries.map((entry) {
             final i = entry.key;
             final a = entry.value;
             return _ActivityTile(
@@ -362,10 +366,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 20),
 
           // Settings
-          _SectionTitle(title: 'Settings', isDark: isDark),
+          _SectionTitle(title: lang.tr('settings'), isDark: isDark),
           _SettingsTile(
             icon: Icons.dark_mode_rounded,
-            label: 'Dark Mode',
+            label: lang.tr('dark_mode'),
             isDark: isDark,
             trailing: Switch(
               value: themeProvider.isDarkMode,
@@ -375,47 +379,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           _SettingsTile(
             icon: Icons.notifications_rounded,
-            label: 'Notifications',
+            label: lang.tr('notifications'),
             isDark: isDark,
             trailing: Switch(
               value: _notificationsEnabled,
               onChanged: (v) {
                 setState(() => _notificationsEnabled = v);
-                _snack(v ? 'Notifications enabled' : 'Notifications disabled');
+                _snack(
+                  v
+                      ? lang.tr('notifications_enabled')
+                      : lang.tr('notifications_disabled'),
+                );
               },
               activeThumbColor: AppColors.emeraldGreen,
             ),
           ),
           _SettingsTile(
             icon: Icons.language_rounded,
-            label: 'Language',
+            label: lang.tr('language'),
             isDark: isDark,
-            value: 'English',
+            value: lang.locale == 'hi'
+                ? 'हिन्दी'
+                : (lang.locale == 'mr' ? 'मराठी' : 'English'),
             onTap: () => _showLanguageDialog(context, isDark),
           ),
           _SettingsTile(
             icon: Icons.security_rounded,
-            label: 'Privacy & Security',
+            label: lang.tr('privacy_security'),
             isDark: isDark,
             onTap: () => _showPrivacySheet(context, isDark),
           ),
           const SizedBox(height: 8),
-          _SectionTitle(title: 'Support', isDark: isDark),
+          _SectionTitle(title: lang.tr('support'), isDark: isDark),
           _SettingsTile(
             icon: Icons.feedback_rounded,
-            label: 'App Feedback',
+            label: lang.tr('app_feedback'),
             isDark: isDark,
             onTap: () => _showFeedbackDialog(context, isDark),
           ),
           _SettingsTile(
             icon: Icons.help_outline_rounded,
-            label: 'Help & FAQ',
+            label: lang.tr('help_faq'),
             isDark: isDark,
             onTap: () => _showHelpSheet(context, isDark),
           ),
           _SettingsTile(
             icon: Icons.info_outline_rounded,
-            label: 'About KavachVerify',
+            label: lang.tr('about_app'),
             isDark: isDark,
             onTap: () => _showAboutDialog(context, isDark),
           ),
@@ -438,8 +448,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.logout_rounded, size: 18),
-                label: const Text(
-                  'Log Out',
+                label: Text(
+                  lang.tr('log_out'),
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -453,6 +463,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ─── Photo Options Sheet ───
   void _showPhotoOptions(BuildContext context, bool isDark) {
+    final langProv = Provider.of<LanguageProvider>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -476,7 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'Profile Photo',
+              langProv.tr('profile_photo'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -486,7 +497,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _photoOption(
               Icons.camera_alt_rounded,
-              'Take Photo',
+              langProv.tr('take_photo'),
               AppColors.deepBlue,
               isDark,
               () async {
@@ -503,14 +514,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     listen: false,
                   ).setProfileImage(photo.path);
-                  _snack('Profile photo updated! 📸');
+                  _snack('${langProv.tr('photo_updated')} 📸');
                 }
               },
             ),
             const SizedBox(height: 8),
             _photoOption(
               Icons.photo_library_rounded,
-              'Choose from Gallery',
+              langProv.tr('choose_gallery'),
               AppColors.emeraldGreen,
               isDark,
               () async {
@@ -527,7 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     listen: false,
                   ).setProfileImage(photo.path);
-                  _snack('Profile photo updated! 🖼️');
+                  _snack('${langProv.tr('photo_updated')} 🖼️');
                 }
               },
             ),
@@ -538,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 8),
               _photoOption(
                 Icons.delete_rounded,
-                'Remove Photo',
+                langProv.tr('remove_photo'),
                 AppColors.danger,
                 isDark,
                 () async {
@@ -547,7 +558,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     listen: false,
                   ).setProfileImage('');
-                  _snack('Profile photo removed');
+                  _snack(langProv.tr('photo_removed'));
                 },
               ),
             ],
@@ -601,6 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ─── Edit Profile Sheet ───
   void _showEditProfileSheet(BuildContext context, bool isDark) {
+    final langProv = Provider.of<LanguageProvider>(context, listen: false);
     // Strip +91 prefix for editing
     final rawPhone = _phone.replaceAll(RegExp(r'[^\d]'), '');
     final phoneDigits = rawPhone.length > 10
@@ -646,7 +658,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Edit Profile',
+                  langProv.tr('edit_profile'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -663,7 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Full Name
-                        _fieldLabel('Full Name', isDark),
+                        _fieldLabel(langProv.tr('full_name'), isDark),
                         const SizedBox(height: 6),
                         TextField(
                           controller: nameC,
@@ -677,13 +689,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           decoration: _fieldDecoration(
                             Icons.person_rounded,
-                            'Enter full name',
+                            langProv.tr('enter_full_name'),
                             isDark,
                           ),
                         ),
                         const SizedBox(height: 16),
                         // Email
-                        _fieldLabel('Email Address', isDark),
+                        _fieldLabel(langProv.tr('email_address'), isDark),
                         const SizedBox(height: 6),
                         TextField(
                           controller: emailC,
@@ -696,13 +708,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           decoration: _fieldDecoration(
                             Icons.email_rounded,
-                            'Enter email',
+                            langProv.tr('enter_email'),
                             isDark,
                           ),
                         ),
                         const SizedBox(height: 16),
                         // Phone
-                        _fieldLabel('Phone Number', isDark),
+                        _fieldLabel(langProv.tr('phone_number'), isDark),
                         const SizedBox(height: 6),
                         TextField(
                           controller: phoneC,
@@ -727,7 +739,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         // Bio
-                        _fieldLabel('Bio', isDark),
+                        _fieldLabel(langProv.tr('bio'), isDark),
                         const SizedBox(height: 6),
                         TextField(
                           controller: bioC,
@@ -742,7 +754,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           decoration: _fieldDecoration(
                             Icons.short_text_rounded,
-                            'Write a short bio',
+                            langProv.tr('write_short_bio'),
                             isDark,
                             counterText: '',
                           ),
@@ -767,8 +779,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     vertical: 14,
                                   ),
                                 ),
-                                child: const Text(
-                                  'Cancel',
+                                child: Text(
+                                  langProv.tr('cancel'),
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -780,9 +792,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   final phone = phoneC.text.trim();
                                   if (phone.isNotEmpty && phone.length != 10) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
+                                      SnackBar(
                                         content: Text(
-                                          'Phone number must be 10 digits',
+                                          langProv.tr('phone_10_digits_error'),
                                         ),
                                       ),
                                     );
@@ -816,7 +828,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     phone: phone.isNotEmpty ? phone : null,
                                     bio: bioC.text.trim(),
                                   );
-                                  _snack('Profile updated successfully! ✨');
+                                  _snack(langProv.tr('profile_updated'));
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.deepBlue,
@@ -829,8 +841,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     vertical: 14,
                                   ),
                                 ),
-                                child: const Text(
-                                  'Save Changes',
+                                child: Text(
+                                  langProv.tr('save_changes'),
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -1198,8 +1210,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ─── Language Dialog ───
   void _showLanguageDialog(BuildContext context, bool isDark) {
-    String selected = 'English';
-    final langs = ['English', 'हिन्दी', 'मराठी'];
+    final langProv = Provider.of<LanguageProvider>(context, listen: false);
+    // Map locale codes to display labels
+    final localeMap = {'en': 'English', 'hi': 'हिन्दी', 'mr': 'मराठी'};
+    String selectedCode = langProv.locale;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -1209,7 +1223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           backgroundColor: isDark ? AppColors.darkCard : AppColors.white,
           title: Text(
-            'Select Language',
+            langProv.tr('select_language'),
             style: TextStyle(
               fontWeight: FontWeight.w700,
               color: isDark ? AppColors.white : AppColors.charcoal,
@@ -1217,21 +1231,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: langs
+            children: localeMap.entries
                 .map(
-                  (lang) => RadioListTile<String>(
+                  (e) => RadioListTile<String>(
                     title: Text(
-                      lang,
+                      e.value,
                       style: TextStyle(
                         color: isDark ? AppColors.white : AppColors.charcoal,
                         fontSize: 14,
                       ),
                     ),
-                    value: lang,
-                    groupValue: selected,
+                    value: e.key,
+                    groupValue: selectedCode,
                     activeColor: AppColors.deepBlue,
                     onChanged: (v) =>
-                        setDialogState(() => selected = v ?? 'English'),
+                        setDialogState(() => selectedCode = v ?? 'en'),
                     dense: true,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1244,14 +1258,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
-                'Cancel',
+                langProv.tr('cancel'),
                 style: TextStyle(color: AppColors.mediumGrey),
               ),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                _snack('Language set to $selected');
+                langProv.setLocale(selectedCode);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.deepBlue,
@@ -1260,7 +1274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text('Apply'),
+              child: Text(langProv.tr('apply')),
             ),
           ],
         ),

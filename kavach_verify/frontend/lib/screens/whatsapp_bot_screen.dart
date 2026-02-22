@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../providers/language_provider.dart';
 
 class WhatsAppBotScreen extends StatelessWidget {
   const WhatsAppBotScreen({super.key});
@@ -23,6 +25,7 @@ class WhatsAppBotScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(
@@ -69,7 +72,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                 ).animate().fadeIn(delay: 100.ms, duration: 350.ms),
                 const SizedBox(height: 6),
                 Text(
-                  'Your AI-powered truth shield on WhatsApp',
+                  lang.tr('whatsapp_subtitle'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
@@ -117,7 +120,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Scan this QR code with your phone camera',
+                        lang.tr('scan_qr'),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark
@@ -144,7 +147,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'or tap the button below',
+                        lang.tr('or_tap_button'),
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark
@@ -171,8 +174,8 @@ class WhatsAppBotScreen extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: _openWhatsApp,
                 icon: const Icon(Icons.chat, size: 20),
-                label: const Text(
-                  'Chat on WhatsApp',
+                label: Text(
+                  lang.tr('open_whatsapp'),
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -197,7 +200,7 @@ class WhatsAppBotScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'What the Bot Can Do',
+                  lang.tr('capabilities'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -207,29 +210,29 @@ class WhatsAppBotScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 _FeatureTile(
                   icon: Icons.image_search_rounded,
-                  title: 'Verify Images & Videos',
-                  subtitle: 'Send media to detect deepfakes & manipulations',
+                  title: lang.tr('feature_verify_media'),
+                  subtitle: lang.tr('feature_verify_media_sub'),
                   color: const Color(0xFF1E40AF),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.description_rounded,
-                  title: 'Analyze Documents',
-                  subtitle: 'Forward PDFs & docs for authenticity checks',
+                  title: lang.tr('feature_analyze_docs'),
+                  subtitle: lang.tr('feature_analyze_docs_sub'),
                   color: const Color(0xFF2563EB),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.record_voice_over_rounded,
-                  title: 'Audio Analysis',
-                  subtitle: 'Send voice notes to detect AI-generated speech',
+                  title: lang.tr('feature_audio'),
+                  subtitle: lang.tr('feature_audio_sub'),
                   color: const Color(0xFF3B82F6),
                   isDark: isDark,
                 ),
                 _FeatureTile(
                   icon: Icons.speed_rounded,
-                  title: 'Instant Results',
-                  subtitle: 'Get a detailed verification report in seconds',
+                  title: lang.tr('feature_instant'),
+                  subtitle: lang.tr('feature_instant_sub'),
                   color: const Color(0xFF0EA5E9),
                   isDark: isDark,
                 ),
@@ -255,7 +258,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'How It Works',
+                    lang.tr('how_it_works'),
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -265,19 +268,19 @@ class WhatsAppBotScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _StepRow(
                     step: '1',
-                    text: 'Send "join typical-nest" to activate the bot',
+                    text: lang.tr('step_1_text'),
                     isDark: isDark,
                   ),
                   const SizedBox(height: 8),
                   _StepRow(
                     step: '2',
-                    text: 'Forward any suspicious content to the bot',
+                    text: lang.tr('step_2_text'),
                     isDark: isDark,
                   ),
                   const SizedBox(height: 8),
                   _StepRow(
                     step: '3',
-                    text: 'Receive an AI-powered verification report',
+                    text: lang.tr('step_3_text'),
                     isDark: isDark,
                   ),
                 ],

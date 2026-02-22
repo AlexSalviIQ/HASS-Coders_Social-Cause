@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool showRegistrationSuccess;
+  const LoginScreen({super.key, this.showRegistrationSuccess = false});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -17,7 +19,41 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _rememberMe = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showRegistrationSuccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Account created successfully! Please sign in.',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -37,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final err = await auth.login(
       _emailController.text.trim(),
       _passwordController.text,
+      rememberMe: _rememberMe,
     );
     if (!mounted) return;
     if (err != null) {
@@ -52,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lang = Provider.of<LanguageProvider>(context);
     final screenH = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
     // Read viewInsets from THIS context (above Scaffold) - the real value
@@ -110,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
                   const SizedBox(height: 4),
                   Text(
-                    'Sign in to continue',
+                    lang.tr('sign_in_continue'),
                     style: TextStyle(fontSize: 13, color: AppColors.mediumGrey),
                   ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                   const SizedBox(height: 32),
@@ -165,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                           _buildField(
                             controller: _emailController,
-                            label: 'Email or Username',
+                            label: lang.tr('email_or_username'),
                             icon: Icons.person_outline_rounded,
                             isDark: isDark,
                             validator: (v) {
@@ -178,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 14),
                           _buildField(
                             controller: _passwordController,
-                            label: 'Password',
+                            label: lang.tr('password'),
                             icon: Icons.lock_outline_rounded,
                             isDark: isDark,
                             obscure: _obscurePassword,
@@ -201,7 +239,44 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 14),
+                          // Remember Me checkbox
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _rememberMe = !_rememberMe),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: (v) => setState(
+                                      () => _rememberMe = v ?? false,
+                                    ),
+                                    activeColor: AppColors.deepBlue,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  lang.tr('remember_me'),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDark
+                                        ? AppColors.lightGrey
+                                        : AppColors.darkGrey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
                           // Login button
                           SizedBox(
                             height: 48,
@@ -224,8 +299,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text(
-                                      'Sign In',
+                                  : Text(
+                                      lang.tr('sign_in'),
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
@@ -243,7 +318,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        lang.tr('no_account'),
                         style: TextStyle(
                           color: AppColors.mediumGrey,
                           fontSize: 13,
@@ -252,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       GestureDetector(
                         onTap: () => context.go('/register'),
                         child: Text(
-                          'Create Account',
+                          lang.tr('create_account'),
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.deepBlueLight
