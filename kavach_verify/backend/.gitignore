@@ -1,0 +1,25 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Generated reports (runtime artifacts)
+reports/*.pdf
+
+# Temp files from media processing
+incoming_media.*
+temp_frame_*.jpg
+temp_filmstrip.jpg
+temp_face_crop_*.jpg
+
+# OS
+.DS_Store
+Thumbs.db
