@@ -7,9 +7,9 @@ class ApiService {
   // Android emulator: http://10.0.2.2:8000
   // Web/Desktop: http://localhost:8000
   // Physical device: http://<YOUR_LAN_IP>:8000
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  static const String baseUrl = 'https://kavachverify.onrender.com';
 
-  static const Duration _timeout = Duration(seconds: 10);
+  static const Duration _timeout = Duration(seconds: 60);
 
   static Map<String, String> get _jsonHeaders => {
     'Content-Type': 'application/json',

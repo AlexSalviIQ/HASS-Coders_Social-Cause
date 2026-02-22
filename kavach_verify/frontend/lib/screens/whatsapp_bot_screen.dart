@@ -7,7 +7,7 @@ class WhatsAppBotScreen extends StatelessWidget {
   const WhatsAppBotScreen({super.key});
 
   static const _whatsappLink =
-      'https://wa.me/14155238886?text=join%20chemical-farther';
+      'https://wa.me/14155238886?text=join%20typical-nest';
 
   Future<void> _openWhatsApp() async {
     final uri = Uri.parse(_whatsappLink);
@@ -135,7 +135,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.asset(
-                            'assets/images/whatsapp_twilio_qr.png',
+                            'assets/images/qrcode.jpeg',
                             width: 200,
                             height: 200,
                             fit: BoxFit.contain,
@@ -265,7 +265,7 @@ class WhatsAppBotScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   _StepRow(
                     step: '1',
-                    text: 'Send "join chemical-farther" to activate the bot',
+                    text: 'Send "join typical-nest" to activate the bot',
                     isDark: isDark,
                   ),
                   const SizedBox(height: 8),
